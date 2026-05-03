@@ -1526,8 +1526,46 @@
             if (isEPGPanelOpen) renderEPG(selectedChannelId);
 
             if (window.stallTimeout) clearTimeout(window.stallTimeout);
+            if (window.stallInterval) clearInterval(window.stallInterval);
             const url = channel.url;
             currentPlayingUrl = url;
+
+            // Stall detection (Nudge)
+            let lastVideoTime = -1;
+            let stallCount = 0;
+            window.stallInterval = setInterval(() => {
+                if (!videoPlayer.paused && currentPlayingUrl === url) {
+                    if (videoPlayer.currentTime === lastVideoTime) {
+                        stallCount++;
+                        // If stuck for ~2 seconds (8 * 250ms)
+                        if (stallCount >= 8) {
+                            const buffer = videoPlayer.buffered;
+                            let hasBufferAhead = false;
+                            for (let i = 0; i < buffer.length; i++) {
+                                if (buffer.start(i) <= videoPlayer.currentTime && buffer.end(i) > videoPlayer.currentTime + 0.2) {
+                                    hasBufferAhead = true;
+                                    break;
+                                }
+                            }
+
+                            if (hasBufferAhead) {
+                                console.warn("Detect stall with buffer, nudging...");
+                                videoPlayer.currentTime += 0.2;
+                            } else {
+                                // If no buffer, maybe it's just slow loading, let it be or handle differently
+                                if (stallCount >= 40) { // ~10 seconds
+                                     console.warn("Serious stall detected, forced reload...");
+                                     playChannel(channel);
+                                }
+                            }
+                            stallCount = 0;
+                        }
+                    } else {
+                        stallCount = 0;
+                    }
+                    lastVideoTime = videoPlayer.currentTime;
+                }
+            }, 250);
 
             // UI Update
             playerOverlay.style.opacity = '0';
@@ -1654,13 +1692,19 @@
             else if (typeof Hls !== 'undefined' && Hls.isSupported() && !isMPD) {
                 hlsInstance = new Hls({
                     enableWorker: true,
-                    lowLatencyMode: false, // Tắt lowLatencyMode để tránh méo tiếng do player tự động tăng/giảm tốc độ âm thanh để đuổi theo live edge
-                    backBufferLength: 90,
-                    maxBufferLength: 60,
-                    manifestLoadingMaxRetry: 4, // Giảm số lần thử lại để tránh treo
-                    manifestLoadingRetryDelay: 1500,
-                    levelLoadingMaxRetry: 4,
-                    fragLoadingMaxRetry: 4,
+                    lowLatencyMode: false,
+                    backBufferLength: 60,
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 60,
+                    manifestLoadingMaxRetry: 10,
+                    manifestLoadingRetryDelay: 1000,
+                    manifestLoadingMaxRetryTimeout: 64000,
+                    levelLoadingMaxRetry: 10,
+                    fragLoadingMaxRetry: 10,
+                    fragLoadingRetryDelay: 1000,
+                    startLevel: -1,
+                    abrEwmaFastLive: 1,
+                    abrEwmaSlowLive: 5,
                 });
 
                 hlsInstance.loadSource(url);
@@ -1701,38 +1745,45 @@
                 });
 
                 let hlsErrorRecoveries = 0;
+                let hlsNetworkRecoveries = 0;
+
                 hlsInstance.on(Hls.Events.ERROR, (event, data) => {
                     if (data.fatal) {
                         switch (data.type) {
                             case Hls.ErrorTypes.NETWORK_ERROR:
                                 console.warn('HLS network error, retrying...', data.details);
-                                if (hlsErrorRecoveries < 3) {
+                                if (hlsNetworkRecoveries < 5) {
+                                    hlsNetworkRecoveries++;
+                                    hlsInstance.startLoad();
+                                } else if (hlsErrorRecoveries < 2) {
                                     hlsErrorRecoveries++;
+                                    hlsNetworkRecoveries = 0;
                                     hlsInstance.startLoad();
                                 } else {
                                     showToast('Lỗi mạng kéo dài, đang tải lại luồng...', 'warning');
-                                    setTimeout(() => { if (currentPlayingUrl === url) playChannel(channel); }, 3000);
+                                    setTimeout(() => { if (currentPlayingUrl === url) playChannel(channel); }, 5000);
                                 }
                                 break;
                             case Hls.ErrorTypes.MEDIA_ERROR:
-                                console.warn('HLS media error, recovering...');
-                                if (hlsErrorRecoveries === 0) {
+                                console.warn('HLS media error, recovering...', data.details);
+                                if (hlsErrorRecoveries < 3) {
                                     hlsErrorRecoveries++;
                                     hlsInstance.recoverMediaError();
-                                } else if (hlsErrorRecoveries === 1) {
+                                } else if (hlsErrorRecoveries === 3) {
                                     hlsErrorRecoveries++;
-                                    hlsInstance.swapAudioCodec(); // Đổi codec âm thanh nếu recover lần đầu thất bại (sửa lỗi méo tiếng/câm tiếng)
+                                    hlsInstance.swapAudioCodec();
                                     hlsInstance.recoverMediaError();
                                 } else {
                                     showToast('Lỗi dữ liệu luồng không thể phục hồi, đang tải lại...', 'error');
-                                    setTimeout(() => { if (currentPlayingUrl === url) playChannel(channel); }, 3000);
+                                    setTimeout(() => { if (currentPlayingUrl === url) playChannel(channel); }, 5000);
                                 }
                                 break;
                             default:
+                                console.error('HLS Fatal Error:', data);
                                 hlsInstance.destroy();
                                 setTimeout(() => {
                                     if (currentPlayingUrl === url) playChannel(channel);
-                                }, 3000);
+                                }, 5000);
                                 break;
                         }
                     }
@@ -1759,13 +1810,21 @@
                     loadingOverlay.classList.add('hidden');
                 });
 
+                let mpegtsRetries = 0;
                 mpegtsInstance.on(mpegts.Events.ERROR, (errorType, errorDetail, errorInfo) => {
                     console.error('mpegts.js Error:', errorType, errorDetail, errorInfo);
                     if (errorType === mpegts.ErrorTypes.NETWORK_ERROR) {
-                        showToast('Lỗi mạng luồng TS. Đang thử lại...', 'error');
-                        setTimeout(() => {
-                            if (currentPlayingUrl === url) playChannel(channel);
-                        }, 3000);
+                        if (mpegtsRetries < 3) {
+                            mpegtsRetries++;
+                            console.log(`Mpegts network error, retry ${mpegtsRetries}...`);
+                            // Mpegts.js handles some retries internally if configured, 
+                            // but here we manually reload after a delay if it stays dead
+                        } else {
+                            showToast('Lỗi mạng luồng TS. Đang thử lại...', 'error');
+                            setTimeout(() => {
+                                if (currentPlayingUrl === url) playChannel(channel);
+                            }, 5000);
+                        }
                     }
                 });
 
