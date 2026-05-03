@@ -1573,6 +1573,11 @@
             document.getElementById('quality-selector').classList.add('hidden');
             videoPlayer.classList.remove('is-live');
 
+            // Force preservesPitch to true to prevent audio distortion when playbackRate changes
+            videoPlayer.preservesPitch = true;
+            if ('mozPreservesPitch' in videoPlayer) videoPlayer.mozPreservesPitch = true;
+            if ('webkitPreservesPitch' in videoPlayer) videoPlayer.webkitPreservesPitch = true;
+
             // Highlight in list
             filterChannels();
 
@@ -1798,7 +1803,7 @@
                     url: url
                 }, {
                     enableWorker: true,
-                    liveBufferLatencyChasing: true,
+                    liveBufferLatencyChasing: false,
                     liveBufferLatencyMaxLatency: 3,
                     liveBufferLatencyMinRemain: 0.5
                 });
