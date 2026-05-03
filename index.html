@@ -1628,10 +1628,23 @@
                             opt.textContent = `${h}p`;
                             qualitySelector.appendChild(opt);
                         });
-                    } else if (uniqueHeights.length === 1) {
-                        qualitySelector.innerHTML = `<option value="${uniqueHeights[0]}">${uniqueHeights[0]}p</option>`;
+                        qualitySelector.classList.remove('hidden');
+                    } else {
+                        // Nếu chỉ có 1 luồng hoặc không đọc được metadata từ manifest
+                        const h = uniqueHeights.length === 1 ? uniqueHeights[0] : 0;
+                        qualitySelector.innerHTML = `<option value="${h || 0}" id="single-quality-opt">${h ? h + 'p' : 'Đang tải...'}</option>`;
+                        qualitySelector.classList.remove('hidden');
+
+                        // Lấy độ phân giải thực khi video bắt đầu kết xuất (render)
+                        videoPlayer.addEventListener('resize', function updateRes() {
+                            const realHeight = videoPlayer.videoHeight;
+                            const opt = document.getElementById('single-quality-opt');
+                            if (realHeight && opt && opt.textContent === 'Đang tải...') {
+                                opt.textContent = `${realHeight}p`;
+                                videoPlayer.removeEventListener('resize', updateRes);
+                            }
+                        });
                     }
-                    qualitySelector.classList.remove('hidden');
                 } catch (e) {
                     showToast('Lỗi phát DASH/DRM: ' + e.message, 'error');
                 }
@@ -1669,11 +1682,22 @@
                             opt.textContent = level.height ? `${level.height}p` : `Chất lượng ${i + 1}`;
                             qualitySelector.appendChild(opt);
                         });
-                    } else if (hlsInstance.levels && hlsInstance.levels.length === 1) {
-                        const h = hlsInstance.levels[0].height;
-                        qualitySelector.innerHTML = `<option value="0">${h ? h + 'p' : 'SD'}</option>`;
+                        qualitySelector.classList.remove('hidden');
+                    } else {
+                        const h = hlsInstance.levels && hlsInstance.levels.length === 1 ? hlsInstance.levels[0].height : 0;
+                        qualitySelector.innerHTML = `<option value="0" id="single-quality-opt">${h ? h + 'p' : 'Đang tải...'}</option>`;
+                        qualitySelector.classList.remove('hidden');
+
+                        // Bắt sự kiện thay đổi kích thước video để lấy độ phân giải thật
+                        videoPlayer.addEventListener('resize', function updateRes() {
+                            const realHeight = videoPlayer.videoHeight;
+                            const opt = document.getElementById('single-quality-opt');
+                            if (realHeight && opt && opt.textContent === 'Đang tải...') {
+                                opt.textContent = `${realHeight}p`;
+                                videoPlayer.removeEventListener('resize', updateRes);
+                            }
+                        });
                     }
-                    qualitySelector.classList.remove('hidden');
                 });
 
                 let hlsErrorRecoveries = 0;
