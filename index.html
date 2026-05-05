@@ -29,9 +29,7 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-deep);
-            background-image:
-                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+            background-image: radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%), radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
             color: var(--text-main);
             height: 100vh;
             width: 100vw;
@@ -114,16 +112,7 @@
             height: 600%;
             top: -250%;
             left: -250%;
-            background: conic-gradient(transparent 0deg,
-                    #00f2fe 60deg,
-                    #ffffff 90deg,
-                    #f093fb 120deg,
-                    transparent 180deg,
-                    transparent 180deg,
-                    #00f2fe 240deg,
-                    #ffffff 270deg,
-                    #f093fb 300deg,
-                    transparent 360deg);
+            background: conic-gradient(transparent 0deg, #00f2fe 60deg, #ffffff 90deg, #f093fb 120deg, transparent 180deg, transparent 180deg, #00f2fe 240deg, #ffffff 270deg, #f093fb 300deg, transparent 360deg);
             animation: spin 3.5s linear infinite;
         }
 
@@ -168,7 +157,7 @@
             background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
         }
 
-        .video-container:hover #custom-controls {
+        .video-container.controls-active #custom-controls {
             opacity: 1;
         }
 
@@ -233,7 +222,6 @@
             pointer-events: none;
         }
 
-        .video-container:hover:not(.hide-cursor) .player-float-controls,
         .video-container.controls-active:not(.hide-cursor) .player-float-controls {
             opacity: 1;
             transform: translateY(0);
@@ -247,7 +235,6 @@
             pointer-events: none;
         }
 
-        .video-container:hover:not(.hide-cursor) #epg-toggle-btn:not(.hidden),
         .video-container.controls-active:not(.hide-cursor) #epg-toggle-btn:not(.hidden) {
             opacity: 1;
             transform: translateY(0);
@@ -414,10 +401,13 @@
                             <i data-lucide="tv" class="w-4 h-4 text-white"></i>
                         </div>
                         <div>
-                            <h1 class="font-bold text-sm tracking-tight text-white leading-none">Lotus<span
-                                    class="text-indigo-400">Player</span></h1>
-                            <span class="text-[9px] text-muted font-medium uppercase tracking-[0.1em] mt-1 block">Live
-                                IPTV Engine</span>
+                            <h1 class="font-bold text-sm tracking-tight text-white leading-none">
+                                Lotus<span class="text-indigo-400">Player</span>
+                            </h1>
+                            <span class="text-[9px] text-muted font-medium uppercase tracking-[0.1em] mt-1 block">
+                                Live
+                                IPTV Engine
+                            </span>
                         </div>
                     </div>
                     <button onclick="openAddDialog()"
@@ -459,19 +449,25 @@
             <div class="p-3 bg-black/40 border-t border-white/5 flex items-center justify-between shrink-0">
                 <div class="flex items-center gap-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_var(--accent)]"></div>
-                    <span id="channel-count" class="text-[10px] text-muted font-semibold uppercase tracking-wider">0
-                        Kênh</span>
+                    <span id="channel-count" class="text-[10px] text-muted font-semibold uppercase tracking-wider">
+                        0
+                        Kênh
+                    </span>
                 </div>
                 <button onclick="clearList()"
-                    class="text-[10px] text-muted hover:text-red-400 transition-colors uppercase tracking-wider font-bold">Dọn
-                    dẹp</button>
+                    class="text-[10px] text-muted hover:text-red-400 transition-colors uppercase tracking-wider font-bold">
+                    Dọn
+                    dẹp
+                </button>
             </div>
         </aside>
 
         <!-- MAIN PLAYER AREA WRAPPER -->
-        <div class="order-1 landscape:order-2 flex-none landscape:flex-1 flex flex-col gap-3 landscape:gap-4 h-auto landscape:h-full overflow-hidden min-w-0 landscape:min-w-[320px]">
+        <div
+            class="order-1 landscape:order-2 flex-none landscape:flex-1 flex flex-col gap-3 landscape:gap-4 h-auto landscape:h-full overflow-hidden min-w-0 landscape:min-w-[320px]">
             <!-- Video Container -->
-            <main class="w-full aspect-video landscape:aspect-auto landscape:flex-1 glass-panel rounded-xl landscape:rounded-none overflow-hidden relative shadow-2xl shrink-0">
+            <main
+                class="w-full aspect-video landscape:aspect-auto landscape:flex-1 glass-panel rounded-xl landscape:rounded-none overflow-hidden relative shadow-2xl shrink-0">
                 <div class="w-full h-full bg-black relative video-container overflow-hidden">
                     <video id="video-player" class="w-full h-full object-contain" playsinline controls></video>
 
@@ -576,9 +572,10 @@
                     <button
                         onclick="loadPredefinedUrl('https://raw.githubusercontent.com/giangnam0201/All-In-One-IPTV/refs/heads/main/channels.m3u')"
                         class="px-3 py-2.5 bg-[#1a1a1a] hover:bg-indigo-500/10 border border-white/5 hover:border-indigo-500/30 rounded-xl transition-all group flex items-center justify-center">
-                        <span
-                            class="text-[12px] font-bold text-white group-hover:text-indigo-400 transition-colors">Giang
-                            Nam</span>
+                        <span class="text-[12px] font-bold text-white group-hover:text-indigo-400 transition-colors">
+                            Giang
+                            Nam
+                        </span>
                     </button>
                     <button
                         onclick="loadPredefinedUrl('https://raw.githubusercontent.com/vuminhthanh12/vuminhthanh12/refs/heads/main/vmttv')"
@@ -588,22 +585,27 @@
                     </button>
                     <button onclick="loadPredefinedUrl('https://livesport.hailab.cloud/')"
                         class="px-3 py-2.5 bg-[#1a1a1a] hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 rounded-xl transition-all group flex items-center justify-center">
-                        <span
-                            class="text-[12px] font-bold text-white group-hover:text-emerald-400 transition-colors">Live
-                            Sport</span>
+                        <span class="text-[12px] font-bold text-white group-hover:text-emerald-400 transition-colors">
+                            Live
+                            Sport
+                        </span>
                     </button>
                     <button onclick="loadPredefinedUrl('https://xem.hoiquan.click/')"
                         class="px-3 py-2.5 bg-[#1a1a1a] hover:bg-red-500/10 border border-white/5 hover:border-red-500/30 rounded-xl transition-all group flex items-center justify-center">
-                        <span class="text-[12px] font-bold text-white group-hover:text-red-400 transition-colors">Hội
-                            Quán</span>
+                        <span class="text-[12px] font-bold text-white group-hover:text-red-400 transition-colors">
+                            Hội
+                            Quán
+                        </span>
                     </button>
                 </div>
             </div>
 
             <div class="relative flex items-center justify-center my-1">
                 <div class="absolute inset-x-0 h-[1px] bg-white/5"></div>
-                <span class="relative bg-[#111111] px-2 text-[10px] text-[#666666] font-medium uppercase">Tùy
-                    Chỉnh</span>
+                <span class="relative bg-[#111111] px-2 text-[10px] text-[#666666] font-medium uppercase">
+                    Tùy
+                    Chỉnh
+                </span>
             </div>
 
             <!-- Input URL -->
@@ -659,6 +661,10 @@
         let currentPlayingUrl = null;
         let selectedChannelId = null;
 
+        // Anti audio-distortion intervals
+        let liveEdgeCheckInterval = null;
+        let bufferCleanupInterval = null;
+
         // EPG State
         const DEFAULT_EPG_URL = 'https://vnepg.site/epg.xml';
         let epgData = new Map(); // channelId -> [programs]
@@ -676,27 +682,53 @@
         const loadingOverlay = document.getElementById('loading-overlay');
         const videoContainer = document.querySelector('.video-container');
 
-        // Hide Cursor & Controls in Fullscreen Inactivity
+        // Hide Cursor & Controls on Inactivity (Desktop + Mobile)
         let inactivityTimeout;
-        function resetInactivityTimer() {
+        const CONTROLS_TIMEOUT = 2500; // 2 giây rồi ẩn (khớp với native controls)
+
+        function showControls() {
             videoContainer.classList.remove('hide-cursor');
             videoContainer.classList.add('controls-active');
-
             clearTimeout(inactivityTimeout);
-            inactivityTimeout = setTimeout(() => {
-                if (document.fullscreenElement) {
-                    videoContainer.classList.add('hide-cursor');
-                    videoContainer.classList.remove('controls-active');
-                }
-            }, 3000);
+            inactivityTimeout = setTimeout(hideControls, CONTROLS_TIMEOUT);
         }
 
-        videoContainer.addEventListener('mousemove', resetInactivityTimer);
-        videoContainer.addEventListener('mousedown', resetInactivityTimer);
-        videoContainer.addEventListener('touchstart', resetInactivityTimer);
-        videoContainer.addEventListener('mouseleave', () => {
+        function hideControls() {
+            // Luôn ẩn controls-active (cả fullscreen lẫn non-fullscreen)
             videoContainer.classList.remove('controls-active');
+            // Chỉ ẩn cursor trong fullscreen
+            if (document.fullscreenElement) {
+                videoContainer.classList.add('hide-cursor');
+            }
+        }
+
+        // Desktop: mousemove hiện controls, mouseleave ẩn ngay
+        videoContainer.addEventListener('mousemove', showControls);
+        videoContainer.addEventListener('mousedown', showControls);
+        videoContainer.addEventListener('mouseleave', () => {
+            clearTimeout(inactivityTimeout);
+            hideControls();
         });
+
+        // Mobile: tap vào video toggle controls, tự ẩn sau 3.5s
+        videoContainer.addEventListener('touchstart', (e) => {
+            // Nếu tap vào nút control/select → không toggle, để nút hoạt động bình thường
+            const tag = e.target.tagName;
+            if (tag === 'BUTTON' || tag === 'SELECT' || tag === 'OPTION' ||
+                e.target.closest('button') || e.target.closest('select') ||
+                e.target.closest('#epg-panel')) {
+                return; // Để event đi qua bình thường
+            }
+
+            if (videoContainer.classList.contains('controls-active')) {
+                // Đang hiện → ẩn ngay
+                clearTimeout(inactivityTimeout);
+                hideControls();
+            } else {
+                // Đang ẩn → hiện, rồi tự ẩn sau 3.5s
+                showControls();
+            }
+        }, { passive: true });
 
         // Hàm đóng/mở Dialog Thêm Nguồn
         const addDialog = document.getElementById('add-dialog');
@@ -727,11 +759,11 @@
             const iconName = type === 'success' ? 'check' : 'alert-circle';
 
             toast.innerHTML = `
-                <div class="toast-icon">
-                    <i data-lucide="${iconName}" class="w-4 h-4"></i>
-                </div>
-                <span>${message}</span>
-            `;
+                    <div class="toast-icon">
+                        <i data-lucide="${iconName}" class="w-4 h-4"></i>
+                    </div>
+                    <span>${message}</span>
+                `;
             container.appendChild(toast);
             lucide.createIcons({ root: toast });
 
@@ -914,24 +946,24 @@
                     : `<i data-lucide="tv" class="w-4 h-4 text-white/20"></i>`;
 
                 li.innerHTML = `
-                    ${isPlaying ? '<div class="active-glow"></div>' : ''}
-                    <div class="w-16 aspect-video shrink-0 bg-white/5 rounded-lg border border-white/5 flex items-center justify-center overflow-hidden">
-                        ${logoHtml}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h3 class="text-xs font-semibold leading-tight truncate ${isPlaying ? 'text-indigo-400' : 'text-white/80'}">
-                            ${channel.name}
-                        </h3>
-                        <p class="text-[9px] text-muted mt-0.5 uppercase tracking-tighter">${channel.group || 'Khác'}</p>
-                    </div>
-                    ${isPlaying ? `
-                        <div class="playing-indicator mr-2">
-                            <div class="indicator-bar" style="animation-delay: 0s"></div>
-                            <div class="indicator-bar" style="animation-delay: 0.2s"></div>
-                            <div class="indicator-bar" style="animation-delay: 0.4s"></div>
+                        ${isPlaying ? '<div class="active-glow"></div>' : ''}
+                        <div class="w-16 aspect-video shrink-0 bg-white/5 rounded-lg border border-white/5 flex items-center justify-center overflow-hidden">
+                            ${logoHtml}
                         </div>
-                    ` : ''}
-                `;
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-xs font-semibold leading-tight truncate ${isPlaying ? 'text-indigo-400' : 'text-white/80'}">
+                                ${channel.name}
+                            </h3>
+                            <p class="text-[9px] text-muted mt-0.5 uppercase tracking-tighter">${channel.group || 'Khác'}</p>
+                        </div>
+                        ${isPlaying ? `
+                            <div class="playing-indicator mr-2">
+                                <div class="indicator-bar" style="animation-delay: 0s"></div>
+                                <div class="indicator-bar" style="animation-delay: 0.2s"></div>
+                                <div class="indicator-bar" style="animation-delay: 0.4s"></div>
+                            </div>
+                        ` : ''}
+                    `;
 
                 li.onclick = (e) => {
                     e.stopPropagation();
@@ -1058,7 +1090,7 @@
 
                     if (response.ok) {
                         text = await response.text();
-                        // Kiểm tra cơ bản xem nội dung trả về có hợp lệ không 
+                        // Kiểm tra cơ bản xem nội dung trả về có hợp lệ không
                         // Chấp nhận cả trường hợp thiếu #EXTM3U nhưng có EXTINF
                         const isM3U = text.includes('#EXTM3U') || text.toUpperCase().includes('EXTINF:');
                         const isJSON = text.trim().startsWith('{') || text.trim().startsWith('[');
@@ -1141,30 +1173,30 @@
                     : `<i data-lucide="tv" class="w-4 h-4 text-white/20"></i>`;
 
                 li.innerHTML = `
-                    ${isPlaying ? '<div class="active-glow"></div>' : ''}
-                    <div class="w-16 aspect-video shrink-0 bg-white/5 rounded-lg border border-white/5 flex items-center justify-center overflow-hidden">
-                        ${logoHtml}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h3 class="text-xs font-semibold leading-tight truncate ${isPlaying ? 'text-indigo-400' : 'text-white/80'}">
-                            ${channel.name}
-                        </h3>
-                        ${currentProgram ? `
-                            <p class="text-[10px] text-indigo-300/80 truncate mt-0.5 font-medium">
-                                <span class="text-white/40 mr-1">•</span>${currentProgram.title}
-                            </p>
-                        ` : `
-                            <p class="text-[9px] text-muted mt-0.5 uppercase tracking-tighter">${channel.group || 'Khác'}</p>
-                        `}
-                    </div>
-                    ${isPlaying ? `
-                        <div class="playing-indicator mr-2">
-                            <div class="indicator-bar" style="animation-delay: 0s"></div>
-                            <div class="indicator-bar" style="animation-delay: 0.2s"></div>
-                            <div class="indicator-bar" style="animation-delay: 0.4s"></div>
+                        ${isPlaying ? '<div class="active-glow"></div>' : ''}
+                        <div class="w-16 aspect-video shrink-0 bg-white/5 rounded-lg border border-white/5 flex items-center justify-center overflow-hidden">
+                            ${logoHtml}
                         </div>
-                    ` : ''}
-                `;
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-xs font-semibold leading-tight truncate ${isPlaying ? 'text-indigo-400' : 'text-white/80'}">
+                                ${channel.name}
+                            </h3>
+                            ${currentProgram ? `
+                                <p class="text-[10px] text-indigo-300/80 truncate mt-0.5 font-medium">
+                                    <span class="text-white/40 mr-1">•</span>${currentProgram.title}
+                                </p>
+                            ` : `
+                                <p class="text-[9px] text-muted mt-0.5 uppercase tracking-tighter">${channel.group || 'Khác'}</p>
+                            `}
+                        </div>
+                        ${isPlaying ? `
+                            <div class="playing-indicator mr-2">
+                                <div class="indicator-bar" style="animation-delay: 0s"></div>
+                                <div class="indicator-bar" style="animation-delay: 0.2s"></div>
+                                <div class="indicator-bar" style="animation-delay: 0.4s"></div>
+                            </div>
+                        ` : ''}
+                    `;
                 li.onclick = () => playChannel(channel);
                 fragment.appendChild(li);
             });
@@ -1178,6 +1210,11 @@
             searchInput.value = '';
             renderCategoryTabs();
             filterChannels();
+
+            // Dọn dẹp tất cả intervals
+            if (window.stallInterval) { clearInterval(window.stallInterval); window.stallInterval = null; }
+            if (liveEdgeCheckInterval) { clearInterval(liveEdgeCheckInterval); liveEdgeCheckInterval = null; }
+            if (bufferCleanupInterval) { clearInterval(bufferCleanupInterval); bufferCleanupInterval = null; }
 
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
             if (shakaInstance) { await shakaInstance.destroy(); shakaInstance = null; }
@@ -1209,6 +1246,10 @@
 
         // === Stop Channel ===
         async function stopChannel() {
+            // Dọn dẹp anti-distortion intervals
+            if (liveEdgeCheckInterval) { clearInterval(liveEdgeCheckInterval); liveEdgeCheckInterval = null; }
+            if (bufferCleanupInterval) { clearInterval(bufferCleanupInterval); bufferCleanupInterval = null; }
+
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
             if (shakaInstance) { await shakaInstance.destroy(); shakaInstance = null; }
             if (mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
@@ -1449,12 +1490,12 @@
 
             if (!epgId || !epgData.has(epgId)) {
                 container.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-center opacity-40 p-6">
-                        <i data-lucide="info" class="w-8 h-8 mb-3"></i>
-                        <p class="text-xs">Không có dữ liệu lịch phát sóng cho: ${channelIdOrName || 'N/A'}</p>
-                        <p class="text-[10px] mt-2">Đang tải EPG từ: ${globalEPGUrl || DEFAULT_EPG_URL}</p>
-                    </div>
-                `;
+                        <div class="h-full flex flex-col items-center justify-center text-center opacity-40 p-6">
+                            <i data-lucide="info" class="w-8 h-8 mb-3"></i>
+                            <p class="text-xs">Không có dữ liệu lịch phát sóng cho: ${channelIdOrName || 'N/A'}</p>
+                            <p class="text-[10px] mt-2">Đang tải EPG từ: ${globalEPGUrl || DEFAULT_EPG_URL}</p>
+                        </div>
+                    `;
                 lucide.createIcons({ root: container });
                 return;
             }
@@ -1488,21 +1529,21 @@
                     const elapsed = now - p.start;
                     const percent = Math.min(100, Math.max(0, (elapsed / total) * 100));
                     progressHtml = `
-                        <div class="epg-progress">
-                            <div class="epg-progress-bar" style="width: ${percent}%"></div>
-                        </div>
-                    `;
+                            <div class="epg-progress">
+                                <div class="epg-progress-bar" style="width: ${percent}%"></div>
+                            </div>
+                        `;
                 }
 
                 item.innerHTML = `
-                    <div class="flex justify-between items-start mb-1">
-                        <span class="text-[10px] font-bold text-indigo-400">${startTime} - ${endTime}</span>
-                        ${isCurrent ? '<span class="px-1.5 py-0.5 rounded-md bg-indigo-500 text-[8px] font-bold text-white animate-pulse">LIVE</span>' : ''}
-                    </div>
-                    <h4 class="text-xs font-semibold text-white/90 mb-1 leading-snug">${p.title}</h4>
-                    ${p.desc ? `<p class="text-[10px] text-muted line-clamp-2">${p.desc}</p>` : ''}
-                    ${progressHtml}
-                `;
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-[10px] font-bold text-indigo-400">${startTime} - ${endTime}</span>
+                            ${isCurrent ? '<span class="px-1.5 py-0.5 rounded-md bg-indigo-500 text-[8px] font-bold text-white animate-pulse">LIVE</span>' : ''}
+                        </div>
+                        <h4 class="text-xs font-semibold text-white/90 mb-1 leading-snug">${p.title}</h4>
+                        ${p.desc ? `<p class="text-[10px] text-muted line-clamp-2">${p.desc}</p>` : ''}
+                        ${progressHtml}
+                    `;
                 fragment.appendChild(item);
             });
 
@@ -1550,12 +1591,12 @@
 
                             if (hasBufferAhead) {
                                 console.warn("Detect stall with buffer, nudging...");
-                                videoPlayer.currentTime += 0.2;
+                                videoPlayer.currentTime += 0.05; // Nudge nhẹ 50ms thay vì 200ms để giảm audio pop
                             } else {
                                 // If no buffer, maybe it's just slow loading, let it be or handle differently
                                 if (stallCount >= 40) { // ~10 seconds
-                                     console.warn("Serious stall detected, forced reload...");
-                                     playChannel(channel);
+                                    console.warn("Serious stall detected, forced reload...");
+                                    playChannel(channel);
                                 }
                             }
                             stallCount = 0;
@@ -1581,7 +1622,9 @@
             // Highlight in list
             filterChannels();
 
-            // Cleanup old stream
+            // Cleanup old stream & anti-distortion intervals
+            if (liveEdgeCheckInterval) { clearInterval(liveEdgeCheckInterval); liveEdgeCheckInterval = null; }
+            if (bufferCleanupInterval) { clearInterval(bufferCleanupInterval); bufferCleanupInterval = null; }
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
             if (shakaInstance) {
                 await shakaInstance.destroy();
@@ -1664,7 +1707,10 @@
                     // Lấy danh sách độ phân giải duy nhất, sắp xếp từ cao xuống thấp
                     const uniqueHeights = [...new Set(tracks.map(t => t.height).filter(h => h > 0))].sort((a, b) => b - a);
                     if (uniqueHeights.length > 1) {
-                        qualitySelector.innerHTML = '<option value="auto">Auto</option>';
+                        // Lấy resolution hiện tại đang active
+                        const activeTrack = tracks.find(t => t.active);
+                        const activeH = activeTrack ? activeTrack.height : uniqueHeights[0];
+                        qualitySelector.innerHTML = `<option value="auto">Auto${activeH ? ' (' + activeH + 'p)' : ''}</option>`;
                         uniqueHeights.forEach(h => {
                             const opt = document.createElement('option');
                             opt.value = h;
@@ -1672,6 +1718,21 @@
                             qualitySelector.appendChild(opt);
                         });
                         qualitySelector.classList.remove('hidden');
+
+                        // === Cập nhật dropdown khi Shaka ABR tự chuyển chất lượng ===
+                        shakaInstance.addEventListener('adaptation', () => {
+                            if (!shakaInstance) return;
+                            const abrConfig = shakaInstance.getConfiguration().abr;
+                            // Chỉ cập nhật khi đang ở chế độ Auto
+                            if (abrConfig && abrConfig.enabled && qualitySelector.value === 'auto') {
+                                const currentTrack = shakaInstance.getVariantTracks().find(t => t.active);
+                                const h = currentTrack ? currentTrack.height : 0;
+                                const autoOpt = qualitySelector.querySelector('option[value="auto"]');
+                                if (autoOpt) {
+                                    autoOpt.textContent = h ? `Auto (${h}p)` : 'Auto';
+                                }
+                            }
+                        });
                     } else {
                         // Nếu chỉ có 1 luồng hoặc không đọc được metadata từ manifest
                         const h = uniqueHeights.length === 1 ? uniqueHeights[0] : 0;
@@ -1692,13 +1753,32 @@
                     showToast('Lỗi phát DASH/DRM: ' + e.message, 'error');
                 }
 
+                // === Shaka Live Edge Recovery (Anti audio drift cho DASH) ===
+                if (shakaInstance && shakaInstance.isLive && shakaInstance.isLive()) {
+                    if (liveEdgeCheckInterval) clearInterval(liveEdgeCheckInterval);
+                    liveEdgeCheckInterval = setInterval(() => {
+                        if (!shakaInstance || !shakaInstance.isLive()) return;
+                        try {
+                            const seekRange = shakaInstance.seekRange();
+                            const currentPos = videoPlayer.currentTime;
+                            const liveEdge = seekRange.end;
+                            const drift = liveEdge - currentPos;
+
+                            if (drift > 15 && !videoPlayer.paused) {
+                                console.warn(`[Audio Fix][Shaka] Drift ${drift.toFixed(1)}s, seeking to live edge...`);
+                                videoPlayer.currentTime = liveEdge - 2;
+                            }
+                        } catch (e) { /* Shaka may be destroyed */ }
+                    }, 30000);
+                }
+
             }
             // --- Case 2: HLS / M3U8 (Using Hls.js) ---
             else if (typeof Hls !== 'undefined' && Hls.isSupported() && !isMPD) {
                 hlsInstance = new Hls({
                     enableWorker: true,
                     lowLatencyMode: false,
-                    backBufferLength: 60,
+                    backBufferLength: 30,
                     maxBufferLength: 30,
                     maxMaxBufferLength: 60,
                     manifestLoadingMaxRetry: 10,
@@ -1708,8 +1788,22 @@
                     fragLoadingMaxRetry: 10,
                     fragLoadingRetryDelay: 1000,
                     startLevel: -1,
-                    abrEwmaFastLive: 1,
-                    abrEwmaSlowLive: 5,
+                    // === ABR Tuning — Phản ứng nhanh khi mạng yếu ===
+                    abrEwmaFastLive: 3,              // Phản ứng với thay đổi bandwidth trong ~3s
+                    abrEwmaSlowLive: 9,              // Trung bình chậm ~9s để tránh nhảy liên tục
+                    abrEwmaFastVoD: 3,               // Tương tự cho VoD
+                    abrEwmaSlowVoD: 9,
+                    abrBandWidthFactor: 0.7,         // Chỉ tăng chất lượng khi BW đủ 70% (thận trọng)
+                    abrBandWidthUpFactor: 0.5,       // Rất thận trọng khi tăng lên (cần 50% dư BW)
+                    abrMaxWithRealBitrate: true,      // Dùng bitrate thực tế thay vì ước lượng
+                    abrEwmaDefaultEstimate: 500000,   // Khởi đầu ước lượng 500kbps (bắt đầu thấp rồi tăng)
+                    abrEwmaDefaultEstimateMax: 5000000, // Giới hạn ước lượng tối đa 5Mbps
+                    // === Anti Audio-Distortion Settings ===
+                    liveSyncDurationCount: 3,
+                    liveMaxLatencyDurationCount: 6,
+                    maxAudioFramesDrift: 1,
+                    forceKeyFrameOnDiscontinuity: true,
+                    progressive: false,
                 });
 
                 hlsInstance.loadSource(url);
@@ -1724,7 +1818,10 @@
                     // Populate quality selector from HLS levels
                     const qualitySelector = document.getElementById('quality-selector');
                     if (hlsInstance.levels && hlsInstance.levels.length > 1) {
-                        qualitySelector.innerHTML = '<option value="-1">Auto</option>';
+                        // Nhiều level → hiện Auto + danh sách chọn
+                        const currentLvl = hlsInstance.levels[hlsInstance.currentLevel] || hlsInstance.levels[0];
+                        const initH = currentLvl ? currentLvl.height : 0;
+                        qualitySelector.innerHTML = `<option value="-1">Auto${initH ? ' (' + initH + 'p)' : ''}</option>`;
                         hlsInstance.levels.forEach((level, i) => {
                             const opt = document.createElement('option');
                             opt.value = i;
@@ -1733,6 +1830,7 @@
                         });
                         qualitySelector.classList.remove('hidden');
                     } else {
+                        // Chỉ 1 level → không cần Auto, hiện luôn resolution
                         const h = hlsInstance.levels && hlsInstance.levels.length === 1 ? hlsInstance.levels[0].height : 0;
                         qualitySelector.innerHTML = `<option value="0" id="single-quality-opt">${h ? h + 'p' : 'Đang tải...'}</option>`;
                         qualitySelector.classList.remove('hidden');
@@ -1746,6 +1844,43 @@
                                 videoPlayer.removeEventListener('resize', updateRes);
                             }
                         });
+                    }
+                });
+
+                // === Cập nhật dropdown khi ABR tự chuyển level ===
+                hlsInstance.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+                    const qualitySelector = document.getElementById('quality-selector');
+                    if (!qualitySelector) return;
+                    // Cập nhật hiển thị nếu đang ở chế độ Auto (-1)
+                    if (hlsInstance.autoLevelEnabled && qualitySelector.value === '-1') {
+                        const level = hlsInstance.levels[data.level];
+                        const h = level ? level.height : 0;
+                        const autoOpt = qualitySelector.querySelector('option[value="-1"]');
+                        if (autoOpt) {
+                            autoOpt.textContent = h ? `Auto (${h}p)` : 'Auto';
+                        }
+                    }
+                });
+
+                // === Live Edge Auto-Recovery (Anti audio drift) ===
+                // Chỉ setup 1 lần khi phát hiện live stream
+                let liveEdgeSetup = false;
+                hlsInstance.on(Hls.Events.LEVEL_LOADED, (event, data) => {
+                    if (data.details && data.details.live && !liveEdgeSetup) {
+                        liveEdgeSetup = true;
+                        if (liveEdgeCheckInterval) clearInterval(liveEdgeCheckInterval);
+                        liveEdgeCheckInterval = setInterval(() => {
+                            if (!hlsInstance || !hlsInstance.liveSyncPosition) return;
+                            const liveEdge = hlsInstance.liveSyncPosition;
+                            const currentPos = videoPlayer.currentTime;
+                            const drift = liveEdge - currentPos;
+
+                            // Nếu trễ hơn 15 giây so với live edge → seek nhẹ nhàng
+                            if (drift > 15 && !videoPlayer.paused) {
+                                console.warn(`[Audio Fix] Drift ${drift.toFixed(1)}s, seeking to live edge...`);
+                                videoPlayer.currentTime = liveEdge - 2; // Về cách live edge 2s
+                            }
+                        }, 30000);
                     }
                 });
 
@@ -1804,8 +1939,12 @@
                 }, {
                     enableWorker: true,
                     liveBufferLatencyChasing: false,
-                    liveBufferLatencyMaxLatency: 3,
-                    liveBufferLatencyMinRemain: 0.5
+                    liveBufferLatencyMaxLatency: 5,
+                    liveBufferLatencyMinRemain: 1.0,
+                    autoCleanupSourceBuffer: true,       // Tự động dọn buffer cũ
+                    autoCleanupMaxBackwardDuration: 30,   // Chỉ giữ 30s buffer phía sau
+                    autoCleanupMinBackwardDuration: 15,   // Bắt đầu dọn khi >15s
+                    fixAudioTimestampGap: true,           // Sửa audio gap tự động
                 });
 
                 mpegtsInstance.attachMediaElement(videoPlayer);
@@ -1822,7 +1961,7 @@
                         if (mpegtsRetries < 3) {
                             mpegtsRetries++;
                             console.log(`Mpegts network error, retry ${mpegtsRetries}...`);
-                            // Mpegts.js handles some retries internally if configured, 
+                            // Mpegts.js handles some retries internally if configured,
                             // but here we manually reload after a delay if it stays dead
                         } else {
                             showToast('Lỗi mạng luồng TS. Đang thử lại...', 'error');
@@ -1846,6 +1985,26 @@
 
             videoPlayer.onplaying = () => {
                 loadingOverlay.classList.add('hidden');
+
+                // === Buffer Cleanup định kỳ (Anti memory leak & audio drift) ===
+                // Chỉ tạo 1 lần, tránh duplicate khi video thoát buffering nhiều lần
+                if (!bufferCleanupInterval) {
+                    bufferCleanupInterval = setInterval(() => {
+                        if (videoPlayer.buffered.length > 0 && hlsInstance) {
+                            const bufStart = videoPlayer.buffered.start(0);
+                            const current = videoPlayer.currentTime;
+                            // Nếu có quá 45s buffer phía sau → yêu cầu flush
+                            if (current - bufStart > 45) {
+                                console.log(`[Buffer Cleanup] Flushing ${(current - bufStart - 15).toFixed(0)}s old buffer`);
+                                hlsInstance.trigger(Hls.Events.BUFFER_FLUSHING, {
+                                    startOffset: bufStart,
+                                    endOffset: current - 15,
+                                    type: 'audiovideo'
+                                });
+                            }
+                        }
+                    }, 120000); // Mỗi 2 phút
+                }
             };
 
             videoPlayer.onwaiting = () => {
