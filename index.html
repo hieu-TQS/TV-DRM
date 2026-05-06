@@ -623,7 +623,7 @@
                             Sport
                         </span>
                     </button>
-                    <button onclick="loadPredefinedUrl('https://xem.hoiquan.click/')"
+                    <button onclick="loadPredefinedUrl('https://tinyurl.com/HoiQuanClick/')"
                         class="px-3 py-2.5 bg-[#1a1a1a] hover:bg-red-500/10 border border-white/5 hover:border-red-500/30 rounded-xl transition-all group flex items-center justify-center">
                         <span class="text-[12px] font-bold text-white group-hover:text-red-400 transition-colors">
                             Hội
@@ -832,7 +832,7 @@
         function parseM3U(text) {
             // Auto-upgrade http to https for specific sources if needed
             text = text.replace(/http:\/\/vietanhtv\.id\.vn/g, 'https://vietanhtv.id.vn');
-            text = text.replace(/http:\/\/xem\.hoiquan\.click/g, 'https://xem.hoiquan.click');
+            text = text.replace(/http:\/\/xem\.hoiquan\.click/g, 'https://tinyurl.com/HoiQuanClick');
             const lines = text.split('\n');
             const channels = [];
             let currentChannel = null;
@@ -926,7 +926,7 @@
             // Auto-upgrade links to HTTPS
             let dataStr = JSON.stringify(data);
             dataStr = dataStr.replace(/http:\/\/vietanhtv\.id\.vn/g, 'https://vietanhtv.id.vn');
-            dataStr = dataStr.replace(/http:\/\/xem\.hoiquan\.click/g, 'https://xem.hoiquan.click');
+            dataStr = dataStr.replace(/http:\/\/xem\.hoiquan\.click/g, 'https://tinyurl.com/HoiQuanClick');
             data = JSON.parse(dataStr);
 
             // Trường hợp 1: Định dạng Hailab Cloud (Có 'groups')
