@@ -524,6 +524,35 @@
                         </div>
                     </div>
 
+                    <!-- Audio/Radio Visualizer -->
+                    <div id="audio-visualizer" class="absolute inset-0 flex flex-col items-center justify-center bg-transparent hidden z-0 pointer-events-none p-6 w-full h-full box-border">
+                        <div class="flex flex-col items-center justify-center transform scale-75 sm:scale-90 transition-all duration-500 pb-24">
+                            <div class="relative w-24 h-24 sm:w-32 flex items-center justify-center shrink-0 mb-4 sm:mb-6">
+                                <div class="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping" style="animation-duration: 2.5s;"></div>
+                                <div class="absolute inset-4 bg-indigo-500 rounded-full opacity-30 animate-ping" style="animation-duration: 2s; animation-delay: 0.5s;"></div>
+                                <div class="relative z-10 bg-[#111] w-16 h-16 sm:w-24 sm:h-24 rounded-full border border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center overflow-hidden">
+                                    <i id="audio-visualizer-icon" data-lucide="radio" class="w-8 h-8 sm:w-10 sm:h-10 text-indigo-400"></i>
+                                </div>
+                            </div>
+
+                            <!-- Channel Logo (Just above the title, no background/border) -->
+                            <img id="audio-visualizer-logo" src="" class="w-full max-w-[200px] sm:max-w-xs aspect-video object-contain mb-4 hidden drop-shadow-2xl rounded-2xl shrink-0">
+
+                            <h3 id="audio-visualizer-title" class="text-white text-base sm:text-lg font-semibold tracking-wide mb-1 text-center w-full truncate px-4">Radio Stream</h3>
+                            <p id="audio-visualizer-desc" class="text-indigo-400/80 text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-4 sm:mb-8 font-medium text-center w-full truncate px-4">Đang phát âm thanh</p>
+                            <div class="flex gap-1.5 h-8 sm:h-10 items-end shrink-0">
+                                <div class="audio-bar" style="height: 40%; animation-delay: 0.1s;"></div>
+                                <div class="audio-bar" style="height: 80%; animation-delay: 0.3s;"></div>
+                                <div class="audio-bar" style="height: 60%; animation-delay: 0.2s;"></div>
+                                <div class="audio-bar" style="height: 100%; animation-delay: 0.5s;"></div>
+                                <div class="audio-bar" style="height: 30%; animation-delay: 0.4s;"></div>
+                                <div class="audio-bar" style="height: 70%; animation-delay: 0.6s;"></div>
+                                <div class="audio-bar" style="height: 50%; animation-delay: 0.3s;"></div>
+                                <div class="audio-bar" style="height: 90%; animation-delay: 0.7s;"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Floating Controls: Stop + Quality + Fullscreen -->
                     <div class="player-float-controls" id="float-controls">
                         <button class="ctrl-btn tooltip" data-tip="Dừng phát" onclick="stopChannel()">
@@ -545,33 +574,6 @@
                         class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md z-20 hidden text-white">
                         <div
                             class="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin">
-                        </div>
-                    </div>
-
-                    <!-- Audio/Radio Visualizer -->
-                    <div id="audio-visualizer" class="absolute inset-0 flex flex-col items-center justify-center bg-black/95 hidden z-10 pointer-events-none">
-                        <div class="relative w-32 h-32 mb-8 flex items-center justify-center">
-                            <div class="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping" style="animation-duration: 2.5s;"></div>
-                            <div class="absolute inset-4 bg-indigo-500 rounded-full opacity-30 animate-ping" style="animation-duration: 2s; animation-delay: 0.5s;"></div>
-                            <div class="relative z-10 bg-[#111] w-24 h-24 rounded-full border border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center overflow-hidden">
-                                <i id="audio-visualizer-icon" data-lucide="radio" class="w-10 h-10 text-indigo-400"></i>
-                            </div>
-                        </div>
-
-                        <!-- Channel Logo (Just above the title, no background/border) -->
-                        <img id="audio-visualizer-logo" src="" class="w-72 aspect-video object-contain mb-4 hidden drop-shadow-2xl rounded-2xl">
-
-                        <h3 id="audio-visualizer-title" class="text-white text-lg font-semibold tracking-wide mb-1">Radio Stream</h3>
-                        <p id="audio-visualizer-desc" class="text-indigo-400/80 text-xs uppercase tracking-[0.2em] mb-8 font-medium">Đang phát âm thanh</p>
-                        <div class="flex gap-1.5 h-10 items-end">
-                            <div class="audio-bar" style="height: 40%; animation-delay: 0.1s;"></div>
-                            <div class="audio-bar" style="height: 80%; animation-delay: 0.3s;"></div>
-                            <div class="audio-bar" style="height: 60%; animation-delay: 0.2s;"></div>
-                            <div class="audio-bar" style="height: 100%; animation-delay: 0.5s;"></div>
-                            <div class="audio-bar" style="height: 30%; animation-delay: 0.4s;"></div>
-                            <div class="audio-bar" style="height: 70%; animation-delay: 0.6s;"></div>
-                            <div class="audio-bar" style="height: 50%; animation-delay: 0.3s;"></div>
-                            <div class="audio-bar" style="height: 90%; animation-delay: 0.7s;"></div>
                         </div>
                     </div>
 
@@ -813,9 +815,11 @@
 
         // === Fullscreen Change Listener ===
         // Cập nhật icon của nút custom khi vào/thoát chế độ toàn màn hình
-        document.addEventListener('fullscreenchange', () => {
+        function handleFSChange() {
             const fsBtn = document.getElementById('fullscreen-btn');
-            if (document.fullscreenElement) {
+            const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            
+            if (isFS) {
                 // Đang fullscreen
                 if (fsBtn) {
                     fsBtn.setAttribute('data-tip', 'Thoát toàn màn hình');
@@ -830,7 +834,12 @@
                 videoContainer.classList.remove('hide-cursor');
             }
             if (fsBtn) lucide.createIcons({ root: fsBtn });
-        });
+        }
+
+        document.addEventListener('fullscreenchange', handleFSChange);
+        document.addEventListener('webkitfullscreenchange', handleFSChange);
+        document.addEventListener('mozfullscreenchange', handleFSChange);
+        document.addEventListener('MSFullscreenChange', handleFSChange);
 
         // Hàm đóng/mở Dialog Thêm Nguồn
         const addDialog = document.getElementById('add-dialog');
@@ -1374,12 +1383,32 @@
         }
 
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                videoContainer.requestFullscreen().catch(() => {
-                    document.documentElement.requestFullscreen();
-                });
+            const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            
+            if (!fsElement) {
+                const reqFS = videoContainer.requestFullscreen || videoContainer.webkitRequestFullscreen || videoContainer.mozRequestFullScreen || videoContainer.msRequestFullscreen;
+                if (reqFS) {
+                    try {
+                        const promise = reqFS.call(videoContainer);
+                        if (promise) {
+                            promise.catch(() => {
+                                const docReqFS = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.mozRequestFullScreen || document.documentElement.msRequestFullscreen;
+                                if(docReqFS) docReqFS.call(document.documentElement);
+                            });
+                        }
+                    } catch (e) {
+                        const docReqFS = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.mozRequestFullScreen || document.documentElement.msRequestFullscreen;
+                        if(docReqFS) docReqFS.call(document.documentElement);
+                    }
+                } else if (videoPlayer.webkitEnterFullscreen) {
+                    // Fallback for iOS Safari which only supports fullscreen on the video element itself
+                    videoPlayer.webkitEnterFullscreen();
+                }
             } else {
-                document.exitFullscreen();
+                const exitFS = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+                if (exitFS) {
+                    exitFS.call(document);
+                }
             }
         }
 
@@ -2101,24 +2130,50 @@
             videoPlayer.onplaying = () => {
                 loadingOverlay.classList.add('hidden');
 
-                // Audio stream detection (Robust)
+                // Audio stream detection (Robust with Stability Check)
                 if (window.audioCheckInterval) clearInterval(window.audioCheckInterval);
+                let audioOnlyTicks = 0;
                 window.audioCheckInterval = setInterval(() => {
                     const audioVis = document.getElementById('audio-visualizer');
                     if (!audioVis || videoPlayer.paused || videoPlayer.readyState < 2) return;
 
+                    // 1. Check if it's a known audio-only domain (like Zing MP3)
+                    const isKnownAudioDomain = currentPlayingUrl.includes('zmp3.zmdcdn.me') || 
+                                               currentPlayingUrl.includes('radio') || 
+                                               currentPlayingUrl.includes('.mp3');
+
+                    // 2. Initial guess based on height
                     let isAudioOnly = (videoPlayer.videoHeight === 0);
 
-                    // Check HLS.js specifically for streams with dummy video tracks but no actual videoCodec
-                    if (typeof hlsInstance !== 'undefined' && hlsInstance && hlsInstance.levels && hlsInstance.levels.length > 0) {
-                        const lvlIdx = hlsInstance.currentLevel === -1 ? 0 : hlsInstance.currentLevel;
-                        const level = hlsInstance.levels[lvlIdx];
-                        if (level && (!level.videoCodec || level.videoCodec === '')) {
-                            isAudioOnly = true;
+                    // 3. Refine detection with player metadata
+                    if (hlsInstance && hlsInstance.levels && hlsInstance.levels.length > 0) {
+                        const level = hlsInstance.levels[hlsInstance.currentLevel === -1 ? 0 : hlsInstance.currentLevel];
+                        if (level) {
+                            if (level.videoCodec && level.videoCodec !== '') isAudioOnly = false;
+                            else if (!level.videoCodec || level.videoCodec === '') isAudioOnly = true;
+                        }
+                    } else if (shakaInstance) {
+                        const variant = shakaInstance.getVariantTracks().find(t => t.active);
+                        if (variant) {
+                            if (variant.videoCodec && variant.videoCodec !== '') isAudioOnly = false;
+                            else if (!variant.videoCodec) isAudioOnly = true;
                         }
                     }
 
+                    // 4. Stability Check: Only show if it's audio-only for multiple consecutive checks
+                    // (Unless it's a known audio domain, then we can be faster)
                     if (isAudioOnly) {
+                        audioOnlyTicks++;
+                    } else {
+                        audioOnlyTicks = 0;
+                        if (!audioVis.classList.contains('hidden')) {
+                            audioVis.classList.add('hidden');
+                        }
+                    }
+
+                    const threshold = isKnownAudioDomain ? 1 : 4; // Zing MP3 hiện ngay, các nguồn khác đợi ~2s
+
+                    if (isAudioOnly && audioOnlyTicks >= threshold) {
                         if (audioVis.classList.contains('hidden')) {
                             const titleEl = document.getElementById('audio-visualizer-title');
                             if (titleEl) titleEl.textContent = channel.name || 'Radio Stream';
@@ -2132,15 +2187,17 @@
                                 logoEl.classList.add('hidden');
                                 logoEl.src = '';
                             }
-                            // Luôn hiện icon radio bên trong hình tròn
                             if (iconEl) iconEl.classList.remove('hidden');
 
                             audioVis.classList.remove('hidden');
                             lucide.createIcons({ root: audioVis });
-                        }
-                    } else {
-                        if (!audioVis.classList.contains('hidden')) {
-                            audioVis.classList.add('hidden');
+
+                            // Update quality selector to show "Audio"
+                            const qualitySelector = document.getElementById('quality-selector');
+                            if (qualitySelector) {
+                                qualitySelector.innerHTML = '<option value="audio">Audio</option>';
+                                qualitySelector.classList.remove('hidden');
+                            }
                         }
                     }
                 }, 500);
