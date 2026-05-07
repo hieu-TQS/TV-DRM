@@ -1711,15 +1711,15 @@
             const url = channel.url;
             currentPlayingUrl = url;
 
-            // Stall detection (Nudge)
+            // Stall detection (Nudge) — kiểm tra mỗi 500ms thay vì 250ms để giảm overhead
             let lastVideoTime = -1;
             let stallCount = 0;
             window.stallInterval = setInterval(() => {
                 if (!videoPlayer.paused && currentPlayingUrl === url) {
                     if (videoPlayer.currentTime === lastVideoTime) {
                         stallCount++;
-                        // If stuck for ~2 seconds (8 * 250ms)
-                        if (stallCount >= 8) {
+                        // If stuck for ~2 seconds (4 * 500ms)
+                        if (stallCount >= 4) {
                             const buffer = videoPlayer.buffered;
                             let hasBufferAhead = false;
                             for (let i = 0; i < buffer.length; i++) {
@@ -1731,10 +1731,9 @@
 
                             if (hasBufferAhead) {
                                 console.warn("Detect stall with buffer, nudging...");
-                                videoPlayer.currentTime += 0.05; // Nudge nhẹ 50ms thay vì 200ms để giảm audio pop
+                                videoPlayer.currentTime += 0.05;
                             } else {
-                                // If no buffer, maybe it's just slow loading, let it be or handle differently
-                                if (stallCount >= 40) { // ~10 seconds
+                                if (stallCount >= 20) { // ~10 seconds
                                     console.warn("Serious stall detected, forced reload...");
                                     playChannel(channel);
                                 }
@@ -1746,7 +1745,39 @@
                     }
                     lastVideoTime = videoPlayer.currentTime;
                 }
-            }, 250);
+            }, 500);
+
+            // === Anti-Distortion: Periodic Buffer Health Monitor ===
+            // Dọn dẹp SourceBuffer cũ mỗi 60s để ngăn memory bloat gây méo tiếng
+            if (window._bufferHealthInterval) clearInterval(window._bufferHealthInterval);
+            window._bufferHealthInterval = setInterval(() => {
+                if (videoPlayer.paused || currentPlayingUrl !== url) return;
+                try {
+                    const buffered = videoPlayer.buffered;
+                    if (buffered.length === 0) return;
+                    const currentTime = videoPlayer.currentTime;
+                    const bufferEnd = buffered.end(buffered.length - 1);
+                    const bufferStart = buffered.start(0);
+                    const totalBuffered = bufferEnd - bufferStart;
+
+                    // Nếu buffer tích lũy quá 45s phía sau → flush bớt qua HLS
+                    if (totalBuffered > 60 && hlsInstance) {
+                        console.warn(`[Buffer Health] Buffer bloat detected: ${totalBuffered.toFixed(1)}s, triggering flush`);
+                        hlsInstance.trigger(Hls.Events.BUFFER_FLUSHING, {
+                            startOffset: bufferStart,
+                            endOffset: currentTime - 10,
+                            type: null
+                        });
+                    }
+
+                    // Kiểm tra nếu có nhiều phân mảnh buffer (> 2 range) → dấu hiệu méo tiếng
+                    if (buffered.length > 2) {
+                        console.warn(`[Buffer Health] Fragmented buffer detected: ${buffered.length} ranges, seeking to heal`);
+                        // Seek nhẹ để trình duyệt hợp nhất buffer
+                        videoPlayer.currentTime = currentTime + 0.01;
+                    }
+                } catch (e) { /* ignore */ }
+            }, 60000);
 
             // UI Update
             playerOverlay.style.opacity = '0';
@@ -1768,6 +1799,7 @@
             if (liveEdgeCheckInterval) { clearInterval(liveEdgeCheckInterval); liveEdgeCheckInterval = null; }
             if (bufferCleanupInterval) { clearInterval(bufferCleanupInterval); bufferCleanupInterval = null; }
             if (window.audioCheckInterval) { clearInterval(window.audioCheckInterval); window.audioCheckInterval = null; }
+            if (window._bufferHealthInterval) { clearInterval(window._bufferHealthInterval); window._bufferHealthInterval = null; }
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
             if (shakaInstance) {
                 await shakaInstance.destroy();
@@ -1921,9 +1953,11 @@
                 hlsInstance = new Hls({
                     enableWorker: true,
                     lowLatencyMode: false,
-                    backBufferLength: 30,
-                    maxBufferLength: 30,
-                    maxMaxBufferLength: 60,
+                    // === Buffer Management — Giữ buffer nhỏ gọn để tránh memory bloat gây méo tiếng ===
+                    backBufferLength: 15,            // Chỉ giữ 15s buffer phía sau (giảm từ 30s)
+                    maxBufferLength: 20,             // Tối đa 20s buffer phía trước (giảm từ 30s)
+                    maxMaxBufferLength: 40,          // Giới hạn cứng 40s (giảm từ 60s)
+                    maxBufferSize: 30 * 1000 * 1000, // Giới hạn 30MB buffer size
                     manifestLoadingMaxRetry: 10,
                     manifestLoadingRetryDelay: 1000,
                     manifestLoadingMaxRetryTimeout: 64000,
@@ -1932,22 +1966,24 @@
                     fragLoadingRetryDelay: 1000,
                     startLevel: -1,
                     // === ABR Tuning — Phản ứng nhanh khi mạng yếu ===
-                    abrEwmaFastLive: 3,              // Phản ứng với thay đổi bandwidth trong ~3s
-                    abrEwmaSlowLive: 9,              // Trung bình chậm ~9s để tránh nhảy liên tục
-                    abrEwmaFastVoD: 3,               // Tương tự cho VoD
+                    abrEwmaFastLive: 3,
+                    abrEwmaSlowLive: 9,
+                    abrEwmaFastVoD: 3,
                     abrEwmaSlowVoD: 9,
-                    abrBandWidthFactor: 0.7,         // Chỉ tăng chất lượng khi BW đủ 70% (thận trọng)
-                    abrBandWidthUpFactor: 0.5,       // Rất thận trọng khi tăng lên (cần 50% dư BW)
-                    abrMaxWithRealBitrate: true,      // Dùng bitrate thực tế thay vì ước lượng
-                    abrEwmaDefaultEstimate: 500000,   // Khởi đầu ước lượng 500kbps (bắt đầu thấp rồi tăng)
-                    abrEwmaDefaultEstimateMax: 5000000, // Giới hạn ước lượng tối đa 5Mbps
+                    abrBandWidthFactor: 0.7,
+                    abrBandWidthUpFactor: 0.5,
+                    abrMaxWithRealBitrate: true,
+                    abrEwmaDefaultEstimate: 500000,
+                    abrEwmaDefaultEstimateMax: 5000000,
                     // === Anti Audio-Distortion Settings ===
                     liveSyncDurationCount: 3,
                     liveMaxLatencyDurationCount: 6,
-                    stretchShortVideoTrack: true, // Giúp đồng bộ hình/tiếng mượt mà thay vì giật cục
-                    maxBufferHole: 0.5,           // Chấp nhận lỗ hổng nhỏ để tránh flush buffer liên tục
+                    stretchShortVideoTrack: true,
+                    maxBufferHole: 0.5,
                     forceKeyFrameOnDiscontinuity: true,
                     progressive: false,
+                    nudgeOffset: 0.2,                // Offset nhỏ khi cần nudge qua lỗ hổng buffer
+                    nudgeMaxRetry: 5,                // Thử nudge tối đa 5 lần trước khi báo lỗi
                 });
 
                 hlsInstance.loadSource(url);
