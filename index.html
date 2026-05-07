@@ -159,8 +159,13 @@
         }
 
         @keyframes audio-bar {
-            0% { transform: scaleY(0.3); }
-            100% { transform: scaleY(1); }
+            0% {
+                transform: scaleY(0.3);
+            }
+
+            100% {
+                transform: scaleY(1);
+            }
         }
 
         /* Player Controls Overlays */
@@ -525,21 +530,33 @@
                     </div>
 
                     <!-- Audio/Radio Visualizer -->
-                    <div id="audio-visualizer" class="absolute inset-0 flex flex-col items-center justify-center bg-transparent hidden z-0 pointer-events-none p-6 w-full h-full box-border">
-                        <div class="flex flex-col items-center justify-center transform scale-75 sm:scale-90 transition-all duration-500 pb-24">
-                            <div class="relative w-24 h-24 sm:w-32 flex items-center justify-center shrink-0 mb-4 sm:mb-6">
-                                <div class="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping" style="animation-duration: 2.5s;"></div>
-                                <div class="absolute inset-4 bg-indigo-500 rounded-full opacity-30 animate-ping" style="animation-duration: 2s; animation-delay: 0.5s;"></div>
-                                <div class="relative z-10 bg-[#111] w-16 h-16 sm:w-24 sm:h-24 rounded-full border border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center overflow-hidden">
-                                    <i id="audio-visualizer-icon" data-lucide="radio" class="w-8 h-8 sm:w-10 sm:h-10 text-indigo-400"></i>
+                    <div id="audio-visualizer"
+                        class="absolute inset-0 flex flex-col items-center justify-center bg-transparent hidden z-0 pointer-events-none p-6 w-full h-full box-border">
+                        <div
+                            class="flex flex-col items-center justify-center transform scale-75 sm:scale-90 transition-all duration-500 pb-24">
+                            <div
+                                class="relative w-24 h-24 sm:w-32 flex items-center justify-center shrink-0 mb-4 sm:mb-6">
+                                <div class="absolute inset-0 bg-indigo-500 rounded-full opacity-20 animate-ping"
+                                    style="animation-duration: 2.5s;"></div>
+                                <div class="absolute inset-4 bg-indigo-500 rounded-full opacity-30 animate-ping"
+                                    style="animation-duration: 2s; animation-delay: 0.5s;"></div>
+                                <div
+                                    class="relative z-10 bg-[#111] w-16 h-16 sm:w-24 sm:h-24 rounded-full border border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center overflow-hidden">
+                                    <i id="audio-visualizer-icon" data-lucide="radio"
+                                        class="w-8 h-8 sm:w-10 sm:h-10 text-indigo-400"></i>
                                 </div>
                             </div>
 
                             <!-- Channel Logo (Just above the title, no background/border) -->
-                            <img id="audio-visualizer-logo" src="" class="w-full max-w-[200px] sm:max-w-xs aspect-video object-contain mb-4 hidden drop-shadow-2xl rounded-2xl shrink-0">
+                            <img id="audio-visualizer-logo" src=""
+                                class="w-full max-w-[200px] sm:max-w-xs aspect-video object-contain mb-4 hidden drop-shadow-2xl rounded-2xl shrink-0">
 
-                            <h3 id="audio-visualizer-title" class="text-white text-base sm:text-lg font-semibold tracking-wide mb-1 text-center w-full truncate px-4">Radio Stream</h3>
-                            <p id="audio-visualizer-desc" class="text-indigo-400/80 text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-4 sm:mb-8 font-medium text-center w-full truncate px-4">Đang phát âm thanh</p>
+                            <h3 id="audio-visualizer-title"
+                                class="text-white text-base sm:text-lg font-semibold tracking-wide mb-1 text-center w-full truncate px-4">
+                                Radio Stream</h3>
+                            <p id="audio-visualizer-desc"
+                                class="text-indigo-400/80 text-[10px] sm:text-xs uppercase tracking-[0.2em] mb-4 sm:mb-8 font-medium text-center w-full truncate px-4">
+                                Đang phát âm thanh</p>
                             <div class="flex gap-1.5 h-8 sm:h-10 items-end shrink-0">
                                 <div class="audio-bar" style="height: 40%; animation-delay: 0.1s;"></div>
                                 <div class="audio-bar" style="height: 80%; animation-delay: 0.3s;"></div>
@@ -818,7 +835,7 @@
         function handleFSChange() {
             const fsBtn = document.getElementById('fullscreen-btn');
             const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-            
+
             if (isFS) {
                 // Đang fullscreen
                 if (fsBtn) {
@@ -1384,7 +1401,7 @@
 
         function toggleFullscreen() {
             const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-            
+
             if (!fsElement) {
                 const reqFS = videoContainer.requestFullscreen || videoContainer.webkitRequestFullscreen || videoContainer.mozRequestFullScreen || videoContainer.msRequestFullscreen;
                 if (reqFS) {
@@ -1393,12 +1410,12 @@
                         if (promise) {
                             promise.catch(() => {
                                 const docReqFS = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.mozRequestFullScreen || document.documentElement.msRequestFullscreen;
-                                if(docReqFS) docReqFS.call(document.documentElement);
+                                if (docReqFS) docReqFS.call(document.documentElement);
                             });
                         }
                     } catch (e) {
                         const docReqFS = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.mozRequestFullScreen || document.documentElement.msRequestFullscreen;
-                        if(docReqFS) docReqFS.call(document.documentElement);
+                        if (docReqFS) docReqFS.call(document.documentElement);
                     }
                 } else if (videoPlayer.webkitEnterFullscreen) {
                     // Fallback for iOS Safari which only supports fullscreen on the video element itself
@@ -1696,6 +1713,36 @@
         }
 
 
+        // === Helper: Hiện trình giả lập Audio ===
+        function showAudioVisualizer(channel) {
+            const audioVis = document.getElementById('audio-visualizer');
+            if (!audioVis || !audioVis.classList.contains('hidden')) return;
+
+            const titleEl = document.getElementById('audio-visualizer-title');
+            if (titleEl) titleEl.textContent = channel.name || 'Radio Stream';
+
+            const logoEl = document.getElementById('audio-visualizer-logo');
+            const iconEl = document.getElementById('audio-visualizer-icon');
+            if (channel.logo) {
+                logoEl.src = channel.logo;
+                logoEl.classList.remove('hidden');
+            } else {
+                logoEl.classList.add('hidden');
+                logoEl.src = '';
+            }
+            if (iconEl) iconEl.classList.remove('hidden');
+
+            audioVis.classList.remove('hidden');
+            lucide.createIcons({ root: audioVis });
+
+            // Cập nhật quality selector thành "Audio"
+            const qualitySelector = document.getElementById('quality-selector');
+            if (qualitySelector) {
+                qualitySelector.innerHTML = '<option value="audio">Audio</option>';
+                qualitySelector.classList.remove('hidden');
+            }
+        }
+
         // Improved Play Channel
         async function playChannel(channel) {
             selectedChannelId = channel.id || channel.name;
@@ -1711,34 +1758,18 @@
             const url = channel.url;
             currentPlayingUrl = url;
 
-            // Stall detection (Nudge) — kiểm tra mỗi 500ms thay vì 250ms để giảm overhead
+            // Stall detection — chỉ reload khi stall nghiêm trọng (không nudge để tránh audio pop)
             let lastVideoTime = -1;
             let stallCount = 0;
             window.stallInterval = setInterval(() => {
                 if (!videoPlayer.paused && currentPlayingUrl === url) {
                     if (videoPlayer.currentTime === lastVideoTime) {
                         stallCount++;
-                        // If stuck for ~2 seconds (4 * 500ms)
-                        if (stallCount >= 4) {
-                            const buffer = videoPlayer.buffered;
-                            let hasBufferAhead = false;
-                            for (let i = 0; i < buffer.length; i++) {
-                                if (buffer.start(i) <= videoPlayer.currentTime && buffer.end(i) > videoPlayer.currentTime + 0.2) {
-                                    hasBufferAhead = true;
-                                    break;
-                                }
-                            }
-
-                            if (hasBufferAhead) {
-                                console.warn("Detect stall with buffer, nudging...");
-                                videoPlayer.currentTime += 0.05;
-                            } else {
-                                if (stallCount >= 20) { // ~10 seconds
-                                    console.warn("Serious stall detected, forced reload...");
-                                    playChannel(channel);
-                                }
-                            }
+                        // Stall nghiêm trọng ~10s → reload kênh
+                        if (stallCount >= 20) {
+                            console.warn("Serious stall detected, forced reload...");
                             stallCount = 0;
+                            playChannel(channel);
                         }
                     } else {
                         stallCount = 0;
@@ -1746,38 +1777,6 @@
                     lastVideoTime = videoPlayer.currentTime;
                 }
             }, 500);
-
-            // === Anti-Distortion: Periodic Buffer Health Monitor ===
-            // Dọn dẹp SourceBuffer cũ mỗi 60s để ngăn memory bloat gây méo tiếng
-            if (window._bufferHealthInterval) clearInterval(window._bufferHealthInterval);
-            window._bufferHealthInterval = setInterval(() => {
-                if (videoPlayer.paused || currentPlayingUrl !== url) return;
-                try {
-                    const buffered = videoPlayer.buffered;
-                    if (buffered.length === 0) return;
-                    const currentTime = videoPlayer.currentTime;
-                    const bufferEnd = buffered.end(buffered.length - 1);
-                    const bufferStart = buffered.start(0);
-                    const totalBuffered = bufferEnd - bufferStart;
-
-                    // Nếu buffer tích lũy quá 45s phía sau → flush bớt qua HLS
-                    if (totalBuffered > 60 && hlsInstance) {
-                        console.warn(`[Buffer Health] Buffer bloat detected: ${totalBuffered.toFixed(1)}s, triggering flush`);
-                        hlsInstance.trigger(Hls.Events.BUFFER_FLUSHING, {
-                            startOffset: bufferStart,
-                            endOffset: currentTime - 10,
-                            type: null
-                        });
-                    }
-
-                    // Kiểm tra nếu có nhiều phân mảnh buffer (> 2 range) → dấu hiệu méo tiếng
-                    if (buffered.length > 2) {
-                        console.warn(`[Buffer Health] Fragmented buffer detected: ${buffered.length} ranges, seeking to heal`);
-                        // Seek nhẹ để trình duyệt hợp nhất buffer
-                        videoPlayer.currentTime = currentTime + 0.01;
-                    }
-                } catch (e) { /* ignore */ }
-            }, 60000);
 
             // UI Update
             playerOverlay.style.opacity = '0';
@@ -1799,7 +1798,7 @@
             if (liveEdgeCheckInterval) { clearInterval(liveEdgeCheckInterval); liveEdgeCheckInterval = null; }
             if (bufferCleanupInterval) { clearInterval(bufferCleanupInterval); bufferCleanupInterval = null; }
             if (window.audioCheckInterval) { clearInterval(window.audioCheckInterval); window.audioCheckInterval = null; }
-            if (window._bufferHealthInterval) { clearInterval(window._bufferHealthInterval); window._bufferHealthInterval = null; }
+            if (window._audioDriftInterval) { clearInterval(window._audioDriftInterval); window._audioDriftInterval = null; }
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
             if (shakaInstance) {
                 await shakaInstance.destroy();
@@ -1953,11 +1952,10 @@
                 hlsInstance = new Hls({
                     enableWorker: true,
                     lowLatencyMode: false,
-                    // === Buffer Management — Giữ buffer nhỏ gọn để tránh memory bloat gây méo tiếng ===
-                    backBufferLength: 15,            // Chỉ giữ 15s buffer phía sau (giảm từ 30s)
-                    maxBufferLength: 20,             // Tối đa 20s buffer phía trước (giảm từ 30s)
-                    maxMaxBufferLength: 40,          // Giới hạn cứng 40s (giảm từ 60s)
-                    maxBufferSize: 30 * 1000 * 1000, // Giới hạn 30MB buffer size
+                    backBufferLength: 10,
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 60,
+                    maxBufferSize: 60 * 1000 * 1000,
                     manifestLoadingMaxRetry: 10,
                     manifestLoadingRetryDelay: 1000,
                     manifestLoadingMaxRetryTimeout: 64000,
@@ -1965,7 +1963,7 @@
                     fragLoadingMaxRetry: 10,
                     fragLoadingRetryDelay: 1000,
                     startLevel: -1,
-                    // === ABR Tuning — Phản ứng nhanh khi mạng yếu ===
+                    // === ABR Tuning ===
                     abrEwmaFastLive: 3,
                     abrEwmaSlowLive: 9,
                     abrEwmaFastVoD: 3,
@@ -1975,15 +1973,16 @@
                     abrMaxWithRealBitrate: true,
                     abrEwmaDefaultEstimate: 500000,
                     abrEwmaDefaultEstimateMax: 5000000,
-                    // === Anti Audio-Distortion Settings ===
+                    // === Discontinuity / Anti-distortion ===
                     liveSyncDurationCount: 3,
                     liveMaxLatencyDurationCount: 6,
                     stretchShortVideoTrack: true,
                     maxBufferHole: 0.5,
                     forceKeyFrameOnDiscontinuity: true,
                     progressive: false,
-                    nudgeOffset: 0.2,                // Offset nhỏ khi cần nudge qua lỗ hổng buffer
-                    nudgeMaxRetry: 5,                // Thử nudge tối đa 5 lần trước khi báo lỗi
+                    nudgeOffset: 0.2,
+                    nudgeMaxRetry: 5,
+                    appendErrorMaxRetry: 5,          // Cho phép thử lại 5 lần khi gặp lỗi append buffer
                 });
 
                 hlsInstance.loadSource(url);
@@ -1995,10 +1994,17 @@
                         loadingOverlay.classList.add('hidden');
                     });
 
+                    // === Kiểm tra Audio-Only từ HLS manifest (chính xác nhất) ===
+                    if (hlsInstance.levels && hlsInstance.levels.length > 0) {
+                        const allAudioOnly = hlsInstance.levels.every(l => !l.videoCodec || l.videoCodec === '');
+                        if (allAudioOnly) {
+                            showAudioVisualizer(channel);
+                        }
+                    }
+
                     // Populate quality selector from HLS levels
                     const qualitySelector = document.getElementById('quality-selector');
                     if (hlsInstance.levels && hlsInstance.levels.length > 1) {
-                        // Nhiều level → hiện Auto + danh sách chọn
                         const currentLvl = hlsInstance.levels[hlsInstance.currentLevel] || hlsInstance.levels[0];
                         const initH = currentLvl ? currentLvl.height : 0;
                         qualitySelector.innerHTML = `<option value="-1">Auto${initH ? ' (' + initH + 'p)' : ''}</option>`;
@@ -2010,12 +2016,10 @@
                         });
                         qualitySelector.classList.remove('hidden');
                     } else {
-                        // Chỉ 1 level → không cần Auto, hiện luôn resolution
                         const h = hlsInstance.levels && hlsInstance.levels.length === 1 ? hlsInstance.levels[0].height : 0;
                         qualitySelector.innerHTML = `<option value="0" id="single-quality-opt">${h ? h + 'p' : 'Đang tải...'}</option>`;
                         qualitySelector.classList.remove('hidden');
 
-                        // Bắt sự kiện thay đổi kích thước video để lấy độ phân giải thật
                         videoPlayer.addEventListener('resize', function updateRes() {
                             const realHeight = videoPlayer.videoHeight;
                             const opt = document.getElementById('single-quality-opt');
@@ -2031,7 +2035,6 @@
                 hlsInstance.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
                     const qualitySelector = document.getElementById('quality-selector');
                     if (!qualitySelector) return;
-                    // Cập nhật hiển thị nếu đang ở chế độ Auto (-1)
                     if (hlsInstance.autoLevelEnabled && qualitySelector.value === '-1') {
                         const level = hlsInstance.levels[data.level];
                         const h = level ? level.height : 0;
@@ -2041,6 +2044,8 @@
                         }
                     }
                 });
+
+
 
                 // === Live Edge Auto-Recovery (Anti audio drift) ===
                 // Chỉ setup 1 lần khi phát hiện live stream
@@ -2064,6 +2069,20 @@
                     }
                 });
 
+                // === Chống méo tiếng khi qua discontinuity (chuyển bài/quảng cáo) ===
+                // FRAG_PARSING_INIT_SEGMENT bắt lửa ngay khi HLS.js phát hiện init segment mới
+                // (xảy ra mỗi lần qua #EXT-X-DISCONTINUITY) — đây là thời điểm đúng để swap codec
+                let initSegmentCount = 0;
+                hlsInstance.on(Hls.Events.FRAG_PARSING_INIT_SEGMENT, (event, data) => {
+                    initSegmentCount++;
+                    // Init segment đầu tiên là lúc khởi động, bỏ qua
+                    if (initSegmentCount <= 1) return;
+                    // Từ init segment thứ 2 trở đi = discontinuity đã xảy ra
+                    console.warn('[Anti-Distortion] New init segment detected (discontinuity), swapping audio codec...');
+                    try {
+                        hlsInstance.swapAudioCodec();
+                    } catch(e) { /* ignore */ }
+                });
                 let hlsErrorRecoveries = 0;
                 let hlsNetworkRecoveries = 0;
 
@@ -2166,79 +2185,15 @@
             videoPlayer.onplaying = () => {
                 loadingOverlay.classList.add('hidden');
 
-                // Audio stream detection (Robust with Stability Check)
-                if (window.audioCheckInterval) clearInterval(window.audioCheckInterval);
-                let audioOnlyTicks = 0;
-                window.audioCheckInterval = setInterval(() => {
-                    const audioVis = document.getElementById('audio-visualizer');
-                    if (!audioVis || videoPlayer.paused || videoPlayer.readyState < 2) return;
+                // Kiểm tra nguồn audio đã biết qua domain/đuôi file (cho native/fallback player)
+                const isKnownAudioSource = currentPlayingUrl.includes('zmp3.zmdcdn.me') ||
+                    currentPlayingUrl.includes('mp3.zing.vn') ||
+                    /\.(mp3|aac|ogg|flac|opus)(\?|$)/i.test(currentPlayingUrl);
+                if (isKnownAudioSource) {
+                    showAudioVisualizer(channel);
+                }
 
-                    // 1. Check if it's a known audio-only domain (like Zing MP3)
-                    const isKnownAudioDomain = currentPlayingUrl.includes('zmp3.zmdcdn.me') || 
-                                               currentPlayingUrl.includes('radio') || 
-                                               currentPlayingUrl.includes('.mp3');
 
-                    // 2. Initial guess based on height
-                    let isAudioOnly = (videoPlayer.videoHeight === 0);
-
-                    // 3. Refine detection with player metadata
-                    if (hlsInstance && hlsInstance.levels && hlsInstance.levels.length > 0) {
-                        const level = hlsInstance.levels[hlsInstance.currentLevel === -1 ? 0 : hlsInstance.currentLevel];
-                        if (level) {
-                            if (level.videoCodec && level.videoCodec !== '') isAudioOnly = false;
-                            else if (!level.videoCodec || level.videoCodec === '') isAudioOnly = true;
-                        }
-                    } else if (shakaInstance) {
-                        const variant = shakaInstance.getVariantTracks().find(t => t.active);
-                        if (variant) {
-                            if (variant.videoCodec && variant.videoCodec !== '') isAudioOnly = false;
-                            else if (!variant.videoCodec) isAudioOnly = true;
-                        }
-                    }
-
-                    // 4. Stability Check: Only show if it's audio-only for multiple consecutive checks
-                    // (Unless it's a known audio domain, then we can be faster)
-                    if (isAudioOnly) {
-                        audioOnlyTicks++;
-                    } else {
-                        audioOnlyTicks = 0;
-                        if (!audioVis.classList.contains('hidden')) {
-                            audioVis.classList.add('hidden');
-                        }
-                    }
-
-                    const threshold = isKnownAudioDomain ? 1 : 4; // Zing MP3 hiện ngay, các nguồn khác đợi ~2s
-
-                    if (isAudioOnly && audioOnlyTicks >= threshold) {
-                        if (audioVis.classList.contains('hidden')) {
-                            const titleEl = document.getElementById('audio-visualizer-title');
-                            if (titleEl) titleEl.textContent = channel.name || 'Radio Stream';
-
-                            const logoEl = document.getElementById('audio-visualizer-logo');
-                            const iconEl = document.getElementById('audio-visualizer-icon');
-                            if (channel.logo) {
-                                logoEl.src = channel.logo;
-                                logoEl.classList.remove('hidden');
-                            } else {
-                                logoEl.classList.add('hidden');
-                                logoEl.src = '';
-                            }
-                            if (iconEl) iconEl.classList.remove('hidden');
-
-                            audioVis.classList.remove('hidden');
-                            lucide.createIcons({ root: audioVis });
-
-                            // Update quality selector to show "Audio"
-                            const qualitySelector = document.getElementById('quality-selector');
-                            if (qualitySelector) {
-                                qualitySelector.innerHTML = '<option value="audio">Audio</option>';
-                                qualitySelector.classList.remove('hidden');
-                            }
-                        }
-                    }
-                }, 500);
-
-                // (Đã xóa manual Buffer Cleanup Interval vì xung đột với Hls.js gây nổ tiếng lạch tạch)
             };
 
             videoPlayer.onwaiting = () => {
