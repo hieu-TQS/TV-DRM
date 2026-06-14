@@ -662,25 +662,10 @@
                     <i data-lucide="zap" class="w-3.5 h-3.5 text-yellow-500 fill-yellow-500/20"></i> Nguồn phát nhanh
                 </label>
                 <div class="grid grid-cols-2 gap-2">
-                    <button
-                        onclick="loadPredefinedUrl('https://raw.githubusercontent.com/giangnam0201/All-In-One-IPTV/refs/heads/main/channels.m3u')"
+                    <button onclick="loadPredefinedUrl('https://raw.githubusercontent.com/hieu-TQS/error/refs/heads/main/error.m3u')"
                         class="px-3 py-2.5 bg-[#1a1a1a] hover:bg-indigo-500/10 border border-white/5 hover:border-indigo-500/30 rounded-xl transition-all group flex items-center justify-center">
                         <span class="text-[12px] font-bold text-white group-hover:text-indigo-400 transition-colors">
-                            Giang
-                            Nam
-                        </span>
-                    </button>
-                    <button
-                        onclick="loadPredefinedUrl('https://raw.githubusercontent.com/vuminhthanh12/vuminhthanh12/refs/heads/main/vmttv')"
-                        class="px-3 py-2.5 bg-[#1a1a1a] hover:bg-indigo-500/10 border border-white/5 hover:border-indigo-500/30 rounded-xl transition-all group flex items-center justify-center">
-                        <span
-                            class="text-[12px] font-bold text-white group-hover:text-indigo-400 transition-colors">VuMinhThanh</span>
-                    </button>
-                    <button onclick="loadPredefinedUrl('https://livesport.hailab.cloud/')"
-                        class="px-3 py-2.5 bg-[#1a1a1a] hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 rounded-xl transition-all group flex items-center justify-center">
-                        <span class="text-[12px] font-bold text-white group-hover:text-emerald-400 transition-colors">
-                            Live
-                            Sport
+                            TV
                         </span>
                     </button>
                     <button onclick="loadPredefinedUrl('https://tinyurl.com/HoiQuanClick/')"
@@ -688,6 +673,13 @@
                         <span class="text-[12px] font-bold text-white group-hover:text-red-400 transition-colors">
                             Hội
                             Quán
+                        </span>
+                    </button>
+                    <button onclick="loadPredefinedUrl('https://vpsttt.vietanhtv.top/tv/')"
+                        class="px-3 py-2.5 bg-[#1a1a1a] hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 rounded-xl transition-all group flex items-center justify-center">
+                        <span class="text-[12px] font-bold text-white group-hover:text-emerald-400 transition-colors">
+                            Bóng
+                            Đá
                         </span>
                     </button>
                 </div>
@@ -1809,8 +1801,40 @@
             videoPlayer.removeAttribute('src');
             videoPlayer.load();
 
-            const isMPD = url.includes('.mpd') || (channel.props && channel.props['inputstream.adaptive.manifest_type'] === 'mpd');
-            const isRawTS = /\.ts(\?|$)/i.test(url) || /extension=ts/i.test(url);
+            // --- Resolve proxy URL (cho các link dạng vieon.php, tv360.php, cleankey.php, ...) ---
+            let resolvedUrl = url;
+            const isPhpProxy = url.includes('.php') && !url.includes('.mpd') && !url.includes('.m3u8');
+            if (isPhpProxy) {
+                try {
+                    const userAgent = (channel.props && channel.props['http-user-agent']) || 'Dalvik/2.1.0';
+                    const resp = await fetch(url, {
+                        headers: { 'User-Agent': userAgent, 'Accept': '*/*' }
+                    });
+                    if (resp.ok) {
+                        const text = await resp.text();
+                        // Thử parse JSON trước
+                        try {
+                            const json = JSON.parse(text);
+                            resolvedUrl = json.url || json.data?.url || json.stream?.url || json.location || text.trim();
+                        } catch(e) {
+                            // Nếu không phải JSON, có thể là redirect URL hoặc link trực tiếp
+                            const trimmed = text.trim();
+                            if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+                                resolvedUrl = trimmed;
+                            } else if (resp.url && resp.url !== url) {
+                                // Nếu có redirect, dùng URL cuối cùng
+                                resolvedUrl = resp.url;
+                            }
+                        }
+                        console.log(`Proxy URL resolved: ${url} → ${resolvedUrl}`);
+                    }
+                } catch(e) {
+                    console.warn(`Không thể resolve proxy URL ${url}:`, e.message);
+                }
+            }
+
+            const isMPD = resolvedUrl.includes('.mpd') || (channel.props && channel.props['inputstream.adaptive.manifest_type'] === 'mpd');
+            const isRawTS = /\.ts(\?|$)/i.test(resolvedUrl) || /extension=ts/i.test(resolvedUrl);
 
             // --- Case 1: DASH / MPD (Using Shaka Player) ---
             if (typeof shaka !== 'undefined' && isMPD && shaka.Player.isBrowserSupported()) {
@@ -1820,22 +1844,60 @@
                 if (channel.props && channel.props['inputstream.adaptive.license_type'] === 'clearkey') {
                     const keyString = channel.props['inputstream.adaptive.license_key'];
                     const clearKeys = {};
-                    try {
-                        // Attempt 1: JSON format {"keys":[{"kid":"...","k":"..."}]} or {"kid":"...","k":"..."}
-                        const keyData = JSON.parse(keyString);
-                        if (keyData.keys && Array.isArray(keyData.keys)) {
-                            keyData.keys.forEach(k => {
-                                clearKeys[base64ToHex(k.kid)] = base64ToHex(k.k);
+
+                    // TH1: license_key là URL (license server trả về key động)
+                    if (keyString && (keyString.startsWith('http://') || keyString.startsWith('https://'))) {
+                        try {
+                            const userAgent = (channel.props && channel.props['http-user-agent']) || 'Dalvik/2.1.0';
+                            const keyResp = await fetch(keyString, {
+                                headers: { 'User-Agent': userAgent, 'Accept': '*/*' }
                             });
-                        } else if (keyData.kid && keyData.k) {
-                            clearKeys[base64ToHex(keyData.kid)] = base64ToHex(keyData.k);
+                            if (keyResp.ok) {
+                                const keyText = await keyResp.text();
+                                // Thử parse JSON trước
+                                try {
+                                    const keyData = JSON.parse(keyText);
+                                    if (keyData.keys && Array.isArray(keyData.keys)) {
+                                        keyData.keys.forEach(k => {
+                                            clearKeys[base64ToHex(k.kid)] = base64ToHex(k.k);
+                                        });
+                                    } else if (keyData.kid && keyData.k) {
+                                        clearKeys[base64ToHex(keyData.kid)] = base64ToHex(keyData.k);
+                                    }
+                                } catch(e) {
+                                    // Có thể là hex format "KID:KEY" trả về dạng text
+                                    const trimmed = keyText.trim();
+                                    if (trimmed.includes(':')) {
+                                        const parts = trimmed.split(':');
+                                        if (parts.length === 2 && /^[0-9a-fA-F]+$/.test(parts[0]) && /^[0-9a-fA-F]+$/.test(parts[1])) {
+                                            clearKeys[parts[0].toLowerCase()] = parts[1].toLowerCase();
+                                        }
+                                    }
+                                }
+                                console.log(`Fetched ClearKey from license URL:`, clearKeys);
+                            }
+                        } catch(e) {
+                            console.warn(`Không thể fetch license key từ URL ${keyString}:`, e.message);
                         }
-                    } catch (e) {
-                        // Attempt 2: Hex format "KID:KEY" (e.g. "aabb...:ccdd...")
-                        if (keyString && keyString.includes(':')) {
-                            const parts = keyString.split(':');
-                            if (parts.length === 2 && /^[0-9a-fA-F]+$/.test(parts[0]) && /^[0-9a-fA-F]+$/.test(parts[1])) {
-                                clearKeys[parts[0].toLowerCase()] = parts[1].toLowerCase();
+                    } else {
+                        // TH2: key tĩnh (JSON hoặc hex)
+                        try {
+                            // Attempt 1: JSON format {"keys":[{"kid":"...","k":"..."}]} or {"kid":"...","k":"..."}
+                            const keyData = JSON.parse(keyString);
+                            if (keyData.keys && Array.isArray(keyData.keys)) {
+                                keyData.keys.forEach(k => {
+                                    clearKeys[base64ToHex(k.kid)] = base64ToHex(k.k);
+                                });
+                            } else if (keyData.kid && keyData.k) {
+                                clearKeys[base64ToHex(keyData.kid)] = base64ToHex(keyData.k);
+                            }
+                        } catch (e) {
+                            // Attempt 2: Hex format "KID:KEY" (e.g. "aabb...:ccdd...")
+                            if (keyString && keyString.includes(':')) {
+                                const parts = keyString.split(':');
+                                if (parts.length === 2 && /^[0-9a-fA-F]+$/.test(parts[0]) && /^[0-9a-fA-F]+$/.test(parts[1])) {
+                                    clearKeys[parts[0].toLowerCase()] = parts[1].toLowerCase();
+                                }
                             }
                         }
                     }
@@ -1862,7 +1924,7 @@
                 });
 
                 try {
-                    await shakaInstance.load(url);
+                    await shakaInstance.load(resolvedUrl);
                     videoPlayer.play();
 
                     // Live stream handling
@@ -1950,7 +2012,7 @@
             // --- Case 2: HLS / M3U8 (Using Hls.js) ---
             else if (typeof Hls !== 'undefined' && Hls.isSupported() && !isMPD) {
                 hlsInstance = new Hls({
-                    enableWorker: true,
+                    enableWorker: false,             // Tắt worker trên Windows để tránh lệch clock âm thanh
                     lowLatencyMode: false,
                     backBufferLength: 10,
                     maxBufferLength: 30,
@@ -1977,15 +2039,16 @@
                     liveSyncDurationCount: 3,
                     liveMaxLatencyDurationCount: 6,
                     stretchShortVideoTrack: true,
-                    maxBufferHole: 0.5,
+                    maxBufferHole: 2.0,              // Tăng lên 2s để tránh khựng khi nối đoạn quảng cáo (như khi có quảng cáo)
+                    highBufferWatchdogPeriod: 2,
                     forceKeyFrameOnDiscontinuity: true,
                     progressive: false,
-                    nudgeOffset: 0.2,
-                    nudgeMaxRetry: 5,
-                    appendErrorMaxRetry: 5,          // Cho phép thử lại 5 lần khi gặp lỗi append buffer
+                    // === Audio Sync Tuning ===
+                    maxAudioFramesDrift: 1,          // Ép đồng bộ âm thanh cực gắt
+                    initialLiveManifestSize: 3,
                 });
 
-                hlsInstance.loadSource(url);
+                hlsInstance.loadSource(resolvedUrl);
                 hlsInstance.attachMedia(videoPlayer);
 
                 hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -2069,19 +2132,11 @@
                     }
                 });
 
-                // === Chống méo tiếng khi qua discontinuity (chuyển bài/quảng cáo) ===
-                // FRAG_PARSING_INIT_SEGMENT bắt lửa ngay khi HLS.js phát hiện init segment mới
-                // (xảy ra mỗi lần qua #EXT-X-DISCONTINUITY) — đây là thời điểm đúng để swap codec
-                let initSegmentCount = 0;
-                hlsInstance.on(Hls.Events.FRAG_PARSING_INIT_SEGMENT, (event, data) => {
-                    initSegmentCount++;
-                    // Init segment đầu tiên là lúc khởi động, bỏ qua
-                    if (initSegmentCount <= 1) return;
-                    // Từ init segment thứ 2 trở đi = discontinuity đã xảy ra
-                    console.warn('[Anti-Distortion] New init segment detected (discontinuity), swapping audio codec...');
-                    try {
-                        hlsInstance.swapAudioCodec();
-                    } catch(e) { /* ignore */ }
+                // === Xử lý khi qua discontinuity (quảng cáo/chuyển bài) ===
+                hlsInstance.on(Hls.Events.FRAG_CHANGED, (event, data) => {
+                    if (data.frag && data.frag.tagList && data.frag.tagList.includes('DISCONTINUITY')) {
+                        console.warn('[Audio-Fix] Discontinuity detected, letting Hls.js sync...');
+                    }
                 });
                 let hlsErrorRecoveries = 0;
                 let hlsNetworkRecoveries = 0;
@@ -2134,7 +2189,7 @@
                 mpegtsInstance = mpegts.createPlayer({
                     type: 'mpegts',
                     isLive: true,
-                    url: url
+                    url: resolvedUrl
                 }, {
                     enableWorker: true,
                     liveBufferLatencyChasing: false,
@@ -2175,7 +2230,7 @@
             }
             // --- Case 4: Fallback (Native browser playback) ---
             else {
-                videoPlayer.src = url;
+                videoPlayer.src = resolvedUrl;
                 videoPlayer.play().catch(e => {
                     loadingOverlay.classList.add('hidden');
                     showToast('Đang chờ trình duyệt tải video...', 'info');
@@ -2242,26 +2297,9 @@
             // Native shortcut for PiP is usually not standard, but we'll remove our custom 'P' map to avoid confusion
         });
 
-        // Tự động tải mặc định danh sách kênh cục bộ khi vừa vào web
+        // Chỉ tải EPG mặc định, không tự động tải danh sách kênh
         window.addEventListener('DOMContentLoaded', () => {
-            // Tải EPG mặc định sau khi trang đã tải xong UI
             setTimeout(() => fetchEPG(), 100);
-
-            setTimeout(async () => {
-                try {
-                    const url = 'https://raw.githubusercontent.com/hieu-TQS/TV/refs/heads/main/TV.m3u';
-                    const response = await fetch(url);
-                    if (response.ok) {
-                        const text = await response.text();
-                        if (text && (text.includes('#EXTM3U') || text.toUpperCase().includes('EXTINF:'))) {
-                            processData(parseM3U(text));
-                            showToast('Đã tải danh sách kênh mặc định.', 'success');
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Không tải được danh sách kênh mặc định:', e.message);
-                }
-            }, 500);
         });
     </script>
 </body>
