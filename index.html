@@ -733,29 +733,7 @@
                 </label>
             </div>
 
-            <!-- Cài đặt nâng cao -->
-            <div class="relative flex items-center justify-center my-1">
-                <div class="absolute inset-x-0 h-[1px] bg-white/5"></div>
-                <span class="relative bg-[#111111] px-2 text-[10px] text-[#666666] font-medium uppercase">Cài đặt</span>
-            </div>
 
-            <!-- Nút bật/tắt Resolve PHP -->
-            <div class="flex items-center justify-between px-1 py-2">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="shield-off" class="w-4 h-4 text-amber-400"></i>
-                    <span class="text-xs text-[#cccccc]">Bỏ qua bảo mật (Resolve PHP)</span>
-                </div>
-                <button id="resolve-toggle-btn" onclick="toggleResolve()"
-                    class="relative w-11 h-6 rounded-full transition-colors duration-200 flex items-center px-0.5"
-                    style="background-color: #22c55e;">
-                    <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200"
-                        style="transform: translateX(1.25rem);"></div>
-                </button>
-            </div>
-            <p class="text-[10px] text-[#666666] px-1 -mt-1">
-                Khi bật: dùng XHR/fetch để lấy link thật từ PHP (cần thiết cho TV360, VieON, Hội Quán...).
-                Khi tắt: dùng link gốc, nhanh hơn nếu link đã là stream trực tiếp.
-            </p>
         </div>
     </div>
 
@@ -1005,7 +983,8 @@
         function isDirectStreamUrl(url) {
             if (!url) return false;
             return /\.(m3u8|mpd|ts|mp4|flv|aac|mp3|m4a|ogg|webm)(\?|#|$)/i.test(url) ||
-                   url.includes('Manifest') || url.includes('playlist.m3u');
+                   url.includes('Manifest') || url.includes('playlist.m3u') ||
+                   url.includes('/play/') || url.includes(':2086/') || url.includes(':2087/');
         }
 
         /**
@@ -1662,7 +1641,7 @@
         let currentBlobUrl = null;
 
         // === Resolve PHP toggle — lưu trạng thái vào localStorage ===
-        let resolveEnabled = localStorage.getItem('resolveEnabled') !== 'false'; // mặc định BẬT
+        let resolveEnabled = localStorage.getItem('resolveEnabled') === 'true'; // mặc định TẮT
 
         function toggleResolve() {
             resolveEnabled = !resolveEnabled;
@@ -1679,20 +1658,7 @@
             console.log(`[Settings] Resolve PHP: ${resolveEnabled ? 'BẬT' : 'TẮT'}`);
         }
 
-        // Khởi tạo trạng thái nút khi load trang
-        (function initResolveToggle() {
-            const btn = document.getElementById('resolve-toggle-btn');
-            if (btn) {
-                const dot = btn.querySelector('div');
-                if (resolveEnabled) {
-                    btn.style.backgroundColor = '#22c55e';
-                    dot.style.transform = 'translateX(1.25rem)';
-                } else {
-                    btn.style.backgroundColor = '#444';
-                    dot.style.transform = 'translateX(0)';
-                }
-            }
-        })();
+
 
         // === Stop Channel ===
         async function stopChannel() {
@@ -2140,7 +2106,7 @@
 
             // --- Resolve proxy URL (dùng XHR + Blob URL) ---
             let resolvedUrl = url;
-            const needsResolve = url.includes('.php') || url.includes('vietanhtv') || url.includes('tv360') || url.includes('vieon') || url.includes('hoiquan');
+            const needsResolve = url.includes('.php') || url.includes('vietanhtv') || url.includes('tv360') || url.includes('vieon') || url.includes('hoiquan') || url.includes('/play/') || url.includes('dpdns.org');
             if (needsResolve) {
                 if (resolveEnabled) {
                     // === CHẾ ĐỘ BẬT: Fetch + parse response để tìm stream URL ===
@@ -2202,6 +2168,9 @@
                             if (finalUrl && finalUrl !== url && /\.(m3u8|mpd|ts)(\?|#|$)/i.test(finalUrl)) {
                                 resolvedUrl = finalUrl;
                                 console.log(`[Resolver] ✅ Dùng finalUrl sau redirect: ${resolvedUrl.substring(0,120)}`);
+                            } else if (finalUrl && finalUrl !== url && (finalUrl.includes(':2086/') || finalUrl.includes(':2087/') || finalUrl.includes('/play/'))) {
+                                resolvedUrl = finalUrl;
+                                console.log(`[Resolver] ✅ Dùng finalUrl raw stream: ${resolvedUrl.substring(0,120)}`);
                             } else if (responseText.includes('#EXTM3U') || responseText.includes('#EXTINF')) {
                                 try {
                                     const blob = new Blob([responseText], { type: 'application/vnd.apple.mpegurl' });
@@ -2306,25 +2275,38 @@
             }
 
             const isMPD = resolvedUrl.includes('.mpd') || (channel.props && channel.props['inputstream.adaptive.manifest_type'] === 'mpd');
-            const isRawTS = /\.ts(\?|$)/i.test(resolvedUrl) || /extension=ts/i.test(resolvedUrl);
+            const isRawTS = /\.ts(\?|$)/i.test(resolvedUrl) || /extension=ts/i.test(resolvedUrl) ||
+                            resolvedUrl.includes(':2086/') || resolvedUrl.includes(':2087/') ||
+                            resolvedUrl.includes('/play/');
 
             // --- Case 1: DASH / MPD (Using Shaka Player) ---
             if (typeof shaka !== 'undefined' && isMPD && shaka.Player.isBrowserSupported()) {
                 shakaInstance = new shaka.Player(videoPlayer);
 
-                // Handle ClearKey DRM
-                if (channel.props && channel.props['inputstream.adaptive.license_type'] === 'clearkey') {
-                    let keyString = channel.props['inputstream.adaptive.license_key'];
+                // Handle DRM
+                const drmType = channel.props && channel.props['inputstream.adaptive.license_type'];
+                const licenseKey = channel.props && channel.props['inputstream.adaptive.license_key'];
+
+                if (drmType === 'widevine' && licenseKey) {
+                    // Widevine — cấu hình license server cho Shaka
+                    shakaInstance.configure({
+                        drm: {
+                            servers: {
+                                'com.widevine.alpha': licenseKey
+                            }
+                        }
+                    });
+                    console.log('[DRM] Configured Widevine license server:', licenseKey);
+                } else if (drmType === 'clearkey' && licenseKey) {
+                    let keyString = licenseKey;
                     const clearKeys = {};
 
-                    // TH0: Nếu resolvedUrl là JSON (từ PHP proxy trả về cả key lẫn url)
+                    // TH0: resolvedUrl là JSON
                     if (resolvedUrl && (resolvedUrl.startsWith('{') || resolvedUrl.startsWith('['))) {
                         try {
                             const proxyData = JSON.parse(resolvedUrl);
-                            // Tìm kid và key từ JSON
                             let kid = proxyData.kid || (proxyData.keys && proxyData.keys[0]?.kid);
                             let key = proxyData.k || (proxyData.keys && proxyData.keys[0]?.k);
-                            // Tìm stream URL
                             const streamUrl = proxyData.url || proxyData.data?.url || proxyData.stream?.url || proxyData.location;
                             if (streamUrl) resolvedUrl = streamUrl;
                             if (kid && key) {
@@ -2343,7 +2325,6 @@
                             });
                             if (keyResp.ok) {
                                 const keyText = await keyResp.text();
-                                // Thử parse JSON trước
                                 try {
                                     const keyData = JSON.parse(keyText);
                                     if (keyData.keys && Array.isArray(keyData.keys)) {
@@ -2354,7 +2335,6 @@
                                         clearKeys[base64ToHex(keyData.kid)] = base64ToHex(keyData.k);
                                     }
                                 } catch(e) {
-                                    // Có thể là hex format "KID:KEY" trả về dạng text
                                     const trimmed = keyText.trim();
                                     if (trimmed.includes(':')) {
                                         const parts = trimmed.split(':');
@@ -2370,10 +2350,9 @@
                         }
                     }
 
-                    // TH2: key tĩnh (JSON hoặc hex) — chỉ nếu chưa có key từ các bước trên
+                    // TH2: key tĩnh (JSON hoặc hex)
                     if (Object.keys(clearKeys).length === 0 && keyString) {
                         try {
-                            // Attempt 1: JSON format {"keys":[{"kid":"...","k":"..."}]} or {"kid":"...","k":"..."}
                             const keyData = JSON.parse(keyString);
                             if (keyData.keys && Array.isArray(keyData.keys)) {
                                 keyData.keys.forEach(k => {
@@ -2383,7 +2362,6 @@
                                 clearKeys[base64ToHex(keyData.kid)] = base64ToHex(keyData.k);
                             }
                         } catch (e) {
-                            // Attempt 2: Hex format "KID:KEY" (e.g. "aabb...:ccdd...")
                             if (keyString && keyString.includes(':')) {
                                 const parts = keyString.split(':');
                                 if (parts.length === 2 && /^[0-9a-fA-F]+$/.test(parts[0]) && /^[0-9a-fA-F]+$/.test(parts[1])) {
@@ -2397,8 +2375,6 @@
                         shakaInstance.configure({
                             drm: {
                                 clearKeys: clearKeys,
-                                // Khi đã có ClearKey, ưu tiên dùng nó và vô hiệu hóa các DRM khác
-                                // để tránh Shaka cố gọi Widevine/PlayReady license server rồi thất bại
                                 servers: {},
                                 advanced: {
                                     'com.widevine.alpha': { serverCertificate: null },
@@ -2421,7 +2397,6 @@
                     // Live stream handling
                     if (shakaInstance.isLive()) {
                         videoPlayer.classList.add('is-live');
-                        // Seek đến live edge
                         const seekRange = shakaInstance.seekRange();
                         videoPlayer.currentTime = seekRange.end;
                     } else {
@@ -2431,10 +2406,8 @@
                     // Populate quality selector from Shaka variant tracks
                     const qualitySelector = document.getElementById('quality-selector');
                     const tracks = shakaInstance.getVariantTracks();
-                    // Lấy danh sách độ phân giải duy nhất, sắp xếp từ cao xuống thấp
                     const uniqueHeights = [...new Set(tracks.map(t => t.height).filter(h => h > 0))].sort((a, b) => b - a);
                     if (uniqueHeights.length > 1) {
-                        // Lấy resolution hiện tại đang active
                         const activeTrack = tracks.find(t => t.active);
                         const activeH = activeTrack ? activeTrack.height : uniqueHeights[0];
                         qualitySelector.innerHTML = `<option value="auto">Auto${activeH ? ' (' + activeH + 'p)' : ''}</option>`;
@@ -2446,11 +2419,9 @@
                         });
                         qualitySelector.classList.remove('hidden');
 
-                        // === Cập nhật dropdown khi Shaka ABR tự chuyển chất lượng ===
                         shakaInstance.addEventListener('adaptation', () => {
                             if (!shakaInstance) return;
                             const abrConfig = shakaInstance.getConfiguration().abr;
-                            // Chỉ cập nhật khi đang ở chế độ Auto
                             if (abrConfig && abrConfig.enabled && qualitySelector.value === 'auto') {
                                 const currentTrack = shakaInstance.getVariantTracks().find(t => t.active);
                                 const h = currentTrack ? currentTrack.height : 0;
@@ -2461,12 +2432,10 @@
                             }
                         });
                     } else {
-                        // Nếu chỉ có 1 luồng hoặc không đọc được metadata từ manifest
                         const h = uniqueHeights.length === 1 ? uniqueHeights[0] : 0;
                         qualitySelector.innerHTML = `<option value="${h || 0}" id="single-quality-opt">${h ? h + 'p' : 'Đang tải...'}</option>`;
                         qualitySelector.classList.remove('hidden');
 
-                        // Lấy độ phân giải thực khi video bắt đầu kết xuất (render)
                         videoPlayer.addEventListener('resize', function updateRes() {
                             const realHeight = videoPlayer.videoHeight;
                             const opt = document.getElementById('single-quality-opt');
@@ -2480,7 +2449,7 @@
                     showToast('Lỗi phát DASH/DRM: ' + e.message, 'error');
                 }
 
-                // === Shaka Live Edge Recovery (Anti audio drift cho DASH) ===
+                // === Shaka Live Edge Recovery ===
                 if (shakaInstance && shakaInstance.isLive && shakaInstance.isLive()) {
                     if (liveEdgeCheckInterval) clearInterval(liveEdgeCheckInterval);
                     liveEdgeCheckInterval = setInterval(() => {
@@ -2490,7 +2459,6 @@
                             const currentPos = videoPlayer.currentTime;
                             const liveEdge = seekRange.end;
                             const drift = liveEdge - currentPos;
-
                             if (drift > 15 && !videoPlayer.paused) {
                                 console.warn(`[Audio Fix][Shaka] Drift ${drift.toFixed(1)}s, seeking to live edge...`);
                                 videoPlayer.currentTime = liveEdge - 2;
