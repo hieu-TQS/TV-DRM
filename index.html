@@ -832,6 +832,39 @@
                 console.warn('[Resolver] Fetch failed:', e.message);
             }
 
+            // === PHƯƠNG ÁN 3: CORS Proxy (cho HTTPS deployment) ===
+            const CORS_PROXIES = [
+                'https://api.allorigins.win/raw?url=',
+                'https://corsproxy.io/?url=',
+            ];
+            for (const proxy of CORS_PROXIES) {
+                try {
+                    const proxyUrl = proxy + encodeURIComponent(url);
+                    const resp = await fetch(proxyUrl, { redirect: 'follow' });
+                    if (resp.ok) {
+                        const text = await resp.text();
+                        if (text && text.length > 5) {
+                            const parsed = parseResponseForStream(text, url, url);
+                            if (parsed) {
+                                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                                console.log(`[Resolver] ✅ Proxy ${proxy} OK (${elapsed}s): ${String(parsed).substring(0, 120)}`);
+                                return parsed;
+                            }
+                            // Nếu là M3U playlist text, tạo Blob URL
+                            if (text.includes('#EXTM3U') || text.includes('#EXTINF')) {
+                                const blob = new Blob([text], { type: 'application/vnd.apple.mpegurl' });
+                                if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+                                currentBlobUrl = URL.createObjectURL(blob);
+                                console.log(`[Resolver] ✅ Proxy ${proxy} → Blob URL: ${currentBlobUrl.substring(0,50)}`);
+                                return currentBlobUrl;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`[Resolver] Proxy ${proxy} failed:`, e.message);
+                }
+            }
+
             console.warn(`[Resolver] ❌ Thất bại sau ${((Date.now()-startTime)/1000).toFixed(1)}s`);
             return url;
         }
@@ -1852,6 +1885,7 @@
             'truyền hình vĩnh long 1': 'thvl1',
             'htvc tivi tết': 'htvcptt',
             'youtv': 'youtv', 'youtvvn': 'youtv',
+            'hittv': 'hittv', 'hitv': 'hittv',
             'fptv': 'fptv', 'htvc phim': 'htvcphim',
         };
 
@@ -2181,7 +2215,51 @@
                             }
                         }
                     } else {
-                        console.warn('[Resolver] ❌ Không lấy được response từ PHP');
+                        console.warn('[Resolver] ❌ XHR/Fetch thất bại, thử CORS proxy...');
+                        // === PHƯƠNG ÁN 3: CORS Proxy (cho HTTPS deployment) ===
+                        const CORS_PROXIES = [
+                            'https://api.allorigins.win/raw?url=',
+                            'https://corsproxy.io/?url=',
+                        ];
+                        for (const proxy of CORS_PROXIES) {
+                            try {
+                                const proxyUrl = proxy + encodeURIComponent(url);
+                                const resp = await fetch(proxyUrl, { redirect: 'follow' });
+                                if (resp.ok) {
+                                    const text = await resp.text();
+                                    if (text && text.length > 5) {
+                                        const parsed = parseResponseForStream(text, url, url);
+                                        if (parsed) {
+                                            if (parsed.startsWith('http')) {
+                                                resolvedUrl = parsed;
+                                                console.log(`[Resolver] ✅ Proxy ${proxy} → stream URL: ${resolvedUrl.substring(0,120)}`);
+                                                break;
+                                            } else {
+                                                // Tạo Blob URL
+                                                const isM3U = parsed.includes('#EXTM3U') || parsed.includes('#EXTINF');
+                                                const mimeType = isM3U ? 'application/vnd.apple.mpegurl' : 'text/plain';
+                                                const blob = new Blob([parsed], { type: mimeType });
+                                                if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+                                                currentBlobUrl = URL.createObjectURL(blob);
+                                                resolvedUrl = currentBlobUrl;
+                                                console.log(`[Resolver] ✅ Proxy ${proxy} → Blob URL: ${resolvedUrl.substring(0,50)}`);
+                                                break;
+                                            }
+                                        }
+                                        if (text.includes('#EXTM3U') || text.includes('#EXTINF')) {
+                                            const blob = new Blob([text], { type: 'application/vnd.apple.mpegurl' });
+                                            if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+                                            currentBlobUrl = URL.createObjectURL(blob);
+                                            resolvedUrl = currentBlobUrl;
+                                            console.log(`[Resolver] ✅ Proxy ${proxy} → M3U Blob URL`);
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn(`[Resolver] Proxy ${proxy} failed:`, e.message);
+                            }
+                        }
                     }
 
                     if (statusEl) statusEl.classList.add('hidden');
