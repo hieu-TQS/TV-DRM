@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src *; media-src * blob: data:; img-src * data:;">
     <title>IPTV Player Modern</title>
     <link rel="icon" href="TV.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -588,10 +589,14 @@
 
                     <!-- Loading Spinner -->
                     <div id="loading-overlay"
-                        class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md z-20 hidden text-white">
+                        class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-20 hidden text-white">
                         <div
                             class="w-8 h-8 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin">
                         </div>
+                        <p id="resolve-status" class="hidden text-[10px] text-indigo-400/80 mt-3 flex items-center gap-1.5">
+                            <span class="inline-block w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></span>
+                            Đang dò link stream...
+                        </p>
                     </div>
 
                     <!-- EPG Side Panel (Inside Main) -->
@@ -727,6 +732,30 @@
                     <span>Tải tệp từ máy (.m3u)</span>
                 </label>
             </div>
+
+            <!-- Cài đặt nâng cao -->
+            <div class="relative flex items-center justify-center my-1">
+                <div class="absolute inset-x-0 h-[1px] bg-white/5"></div>
+                <span class="relative bg-[#111111] px-2 text-[10px] text-[#666666] font-medium uppercase">Cài đặt</span>
+            </div>
+
+            <!-- Nút bật/tắt Resolve PHP -->
+            <div class="flex items-center justify-between px-1 py-2">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="shield-off" class="w-4 h-4 text-amber-400"></i>
+                    <span class="text-xs text-[#cccccc]">Bỏ qua bảo mật (Resolve PHP)</span>
+                </div>
+                <button id="resolve-toggle-btn" onclick="toggleResolve()"
+                    class="relative w-11 h-6 rounded-full transition-colors duration-200 flex items-center px-0.5"
+                    style="background-color: #22c55e;">
+                    <div class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200"
+                        style="transform: translateX(1.25rem);"></div>
+                </button>
+            </div>
+            <p class="text-[10px] text-[#666666] px-1 -mt-1">
+                Khi bật: dùng XHR/fetch để lấy link thật từ PHP (cần thiết cho TV360, VieON, Hội Quán...).
+                Khi tắt: dùng link gốc, nhanh hơn nếu link đã là stream trực tiếp.
+            </p>
         </div>
     </div>
 
@@ -737,6 +766,231 @@
         // Khởi tạo icons
         lucide.createIcons();
         if (typeof shaka !== 'undefined') shaka.polyfill.installAll();
+
+        // ============================================================
+        // LINK RESOLVER ENGINE V4 — XHR + BLOB URL
+        // ============================================================
+        // Cách này hoạt động với MỌI link PHP:
+        // 1. Dùng XMLHttpRequest với responseType = 'document' để bypass CORS
+        // 2. Parse response text tìm stream URL thật
+        // 3. Nếu tìm thấy M3U playlist text → tạo Blob URL cho Hls.js
+        // 4. Nếu tìm thấy URL thật → dùng luôn
+        // 5. Không dùng fetch, không dùng Service Worker, không dùng proxy
+
+        /**
+         * Resolve URL — dùng XHR + Blob URL
+         */
+        async function resolveStreamUrl(url, channelProps = {}) {
+            // Link thật — không cần resolve
+            if (isDirectStreamUrl(url)) return url;
+
+            console.log(`[Resolver] Resolving PHP: ${url.substring(0, 100)}`);
+            const startTime = Date.now();
+
+            // === PHƯƠNG ÁN 1: XHR (vượt CORS khi mở từ file://) ===
+            try {
+                const result = await xhrFetchText(url);
+                if (result.text && result.text.length > 5) {
+                    const parsed = parseResponseForStream(result.text, result.finalUrl || url, url);
+                    if (parsed) {
+                        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                        console.log(`[Resolver] ✅ XHR OK (${elapsed}s): ${String(parsed).substring(0, 120)}`);
+                        return parsed;
+                    }
+                    // Nếu finalUrl là .m3u8/.mpd thì dùng luôn
+                    if (result.finalUrl && result.finalUrl !== url && /\.(m3u8|mpd|ts)(\?|#|$)/i.test(result.finalUrl)) {
+                        console.log(`[Resolver] ✅ XHR finalUrl: ${result.finalUrl.substring(0,120)}`);
+                        return result.finalUrl;
+                    }
+                }
+            } catch (e) {
+                console.warn('[Resolver] XHR failed:', e.message);
+            }
+
+            // === PHƯƠNG ÁN 2: fetch trực tiếp (follow redirect tự động) ===
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'Accept': '*/*',
+                        'Referer': 'https://vietanhtv.id.vn/',
+                    },
+                    redirect: 'follow',
+                });
+                if (response.ok) {
+                    const finalUrl = response.url;
+                    const text = await response.text();
+                    const parsed = parseResponseForStream(text, finalUrl, url);
+                    if (parsed) {
+                        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                        console.log(`[Resolver] ✅ Fetch OK (${elapsed}s): ${String(parsed).substring(0, 120)}`);
+                        return parsed;
+                    }
+                    if (finalUrl !== url && !finalUrl.includes('.php')) return finalUrl;
+                }
+            } catch (e) {
+                console.warn('[Resolver] Fetch failed:', e.message);
+            }
+
+            console.warn(`[Resolver] ❌ Thất bại sau ${((Date.now()-startTime)/1000).toFixed(1)}s`);
+            return url;
+        }
+
+        /**
+         * XMLHttpRequest để lấy response text — vượt CORS
+         */
+        function xhrFetchText(url) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', url, true);
+                    xhr.timeout = 20000;
+                    xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+                    xhr.setRequestHeader('Accept', '*/*');
+                    xhr.setRequestHeader('Referer', 'https://vietanhtv.id.vn/');
+                    xhr.responseType = 'text';
+
+                    xhr.onload = function() {
+                        if (xhr.status === 200 || xhr.status === 302 || xhr.status === 301 || xhr.status === 0) {
+                            // XHR không follow redirect, nhưng responseURL cho ta URL cuối cùng
+                            resolve({
+                                text: xhr.responseText,
+                                finalUrl: xhr.responseURL || url
+                            });
+                        } else {
+                            reject(new Error(`HTTP ${xhr.status}`));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('XHR error'));
+                    xhr.ontimeout = () => reject(new Error('XHR timeout'));
+                    xhr.send();
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }
+
+        /**
+         * Parse response text để tìm stream URL
+         */
+        function parseResponseForStream(text, finalUrl, originalUrl) {
+            if (!text || text.length < 5) return null;
+            const trimmed = text.trim();
+
+            // === JSON ===
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                try {
+                    const json = JSON.parse(trimmed);
+                    const url = findUrlInJson(json);
+                    if (url) return url;
+                    if (json.keys || json.kid) return trimmed; // ClearKey
+                } catch { /* not JSON */ }
+            }
+
+            // === M3U Playlist ===
+            if (text.includes('#EXTM3U') || text.includes('#EXTINF')) {
+                const lines = text.split('\n');
+                for (const line of lines) {
+                    const l = line.trim();
+                    if (l.startsWith('http') && (l.includes('.m3u8') || l.includes('.ts') || l.includes('.mp4'))) {
+                        return l;
+                    }
+                    if (l.endsWith('.m3u8') || l.endsWith('.ts')) {
+                        try { return new URL(l, finalUrl || originalUrl).href; } catch { return l; }
+                    }
+                }
+                if (finalUrl && finalUrl !== originalUrl && !finalUrl.includes('.php')) return finalUrl;
+                return text; // Trả về nguyên playlist để tạo Blob URL
+            }
+
+            // === MPD/DASH ===
+            if (text.includes('<MPD') || (text.includes('<?xml') && text.includes('mpd:'))) {
+                if (finalUrl && finalUrl !== originalUrl) return finalUrl;
+                return text;
+            }
+
+            // === URL trực tiếp ===
+            const urls = [...trimmed.matchAll(/https?:\/\/[^\s<>"']+/g)].map(m => m[0]);
+            const streamUrls = urls.filter(u => /\.(m3u8|mpd|ts|mp4|flv|aac|mp3|m4a)(\?|#|$)/i.test(u));
+            if (streamUrls.length > 0) return streamUrls[0];
+            if (urls.length === 1) return urls[0];
+
+            // === HTML ===
+            if (text.includes('<html') || text.includes('<!DOCTYPE')) {
+                const patterns = [
+                    /<iframe[^>]+src=["'](https?:\/\/[^"']+)["']/i,
+                    /<video[^>]+src=["'](https?:\/\/[^"']+)["']/i,
+                    /<source[^>]+src=["'](https?:\/\/[^"']+)["']/i,
+                    /<a[^>]+href=["'](https?:\/\/[^"']+\.(?:m3u8|mpd|ts)[^"']*)["']/i,
+                    /embed["']?\s*:\s*["'](https?:\/\/[^"']+)["']/i,
+                    /file["']?\s*:\s*["'](https?:\/\/[^"']+)["']/i,
+                ];
+                for (const pattern of patterns) {
+                    const match = text.match(pattern);
+                    if (match) return match[1];
+                }
+                for (const u of urls) {
+                    if (/\.(m3u8|mpd|ts)(\?|#|$)/i.test(u)) return u;
+                }
+            }
+
+            // === Deep search ===
+            const deepMatch = text.match(/https?:\/\/[^'"\s<>)]+\.(?:m3u8|mpd|ts)[^'"\s<>)]*/i);
+            if (deepMatch) return deepMatch[0];
+
+            return null;
+        }
+
+        /**
+         * Tìm URL trong JSON object (đệ quy)
+         */
+        function findUrlInJson(json) {
+            if (!json || typeof json !== 'object') return null;
+            const keys = ['url', 'link', 'src', 'source', 'file', 'location', 'redirect',
+                'stream', 'stream_url', 'streamUrl', 'hls', 'dash', 'm3u8', 'mpd'];
+            for (const key of keys) {
+                if (typeof json[key] === 'string' && json[key].startsWith('http')) return json[key];
+            }
+            for (const key of Object.keys(json)) {
+                if (typeof json[key] === 'object') {
+                    const result = findUrlInJson(json[key]);
+                    if (result) return result;
+                }
+            }
+            if (Array.isArray(json)) {
+                for (const item of json) {
+                    const result = findUrlInJson(item);
+                    if (result) return result;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * Kiểm tra URL có phải stream trực tiếp không
+         */
+        function isDirectStreamUrl(url) {
+            if (!url) return false;
+            return /\.(m3u8|mpd|ts|mp4|flv|aac|mp3|m4a|ogg|webm)(\?|#|$)/i.test(url) ||
+                   url.includes('Manifest') || url.includes('playlist.m3u');
+        }
+
+        /**
+         * Detect loại stream từ URL
+         */
+        function detectStreamType(url) {
+            if (!url) return 'unknown';
+            if (url.includes('.mpd') || url.includes('Manifest') || url.includes('mpd:')) return 'dash';
+            if (url.includes('.m3u8') || url.includes('m3u8') || url.includes('playlist.m3u')) return 'hls';
+            if (url.includes('.ts') || url.includes('extension=ts')) return 'mpegts';
+            if (url.includes('.mp3') || url.includes('.aac') || url.includes('.ogg') || url.includes('.flac') || url.includes('.opus')) return 'audio';
+            if (url.includes('.mp4') || url.includes('.flv') || url.includes('.webm')) return 'video';
+            return 'unknown';
+        }
+
+        // ============================================================
+        // END LINK RESOLVER ENGINE V4
+        // ============================================================
 
         // Trạng thái
         let allChannels = [];
@@ -1342,6 +1596,12 @@
             if (mpegtsInstance) { mpegtsInstance.destroy(); mpegtsInstance = null; }
             videoPlayer.pause(); videoPlayer.removeAttribute('src'); videoPlayer.load();
 
+            // Cleanup Blob URL
+            if (currentBlobUrl) {
+                URL.revokeObjectURL(currentBlobUrl);
+                currentBlobUrl = null;
+            }
+
             playerOverlay.style.opacity = '1';
             currentPlayingUrl = null;
         }
@@ -1365,6 +1625,42 @@
             }
         }
 
+        // === Blob URL tracker — để cleanup khi stop ===
+        let currentBlobUrl = null;
+
+        // === Resolve PHP toggle — lưu trạng thái vào localStorage ===
+        let resolveEnabled = localStorage.getItem('resolveEnabled') !== 'false'; // mặc định BẬT
+
+        function toggleResolve() {
+            resolveEnabled = !resolveEnabled;
+            localStorage.setItem('resolveEnabled', resolveEnabled);
+            const btn = document.getElementById('resolve-toggle-btn');
+            const dot = btn.querySelector('div');
+            if (resolveEnabled) {
+                btn.style.backgroundColor = '#22c55e';
+                dot.style.transform = 'translateX(1.25rem)';
+            } else {
+                btn.style.backgroundColor = '#444';
+                dot.style.transform = 'translateX(0)';
+            }
+            console.log(`[Settings] Resolve PHP: ${resolveEnabled ? 'BẬT' : 'TẮT'}`);
+        }
+
+        // Khởi tạo trạng thái nút khi load trang
+        (function initResolveToggle() {
+            const btn = document.getElementById('resolve-toggle-btn');
+            if (btn) {
+                const dot = btn.querySelector('div');
+                if (resolveEnabled) {
+                    btn.style.backgroundColor = '#22c55e';
+                    dot.style.transform = 'translateX(1.25rem)';
+                } else {
+                    btn.style.backgroundColor = '#444';
+                    dot.style.transform = 'translateX(0)';
+                }
+            }
+        })();
+
         // === Stop Channel ===
         async function stopChannel() {
             // Dọn dẹp anti-distortion intervals
@@ -1378,6 +1674,13 @@
             videoPlayer.pause();
             videoPlayer.removeAttribute('src');
             videoPlayer.load();
+
+            // Cleanup Blob URL
+            if (currentBlobUrl) {
+                URL.revokeObjectURL(currentBlobUrl);
+                currentBlobUrl = null;
+            }
+
             currentPlayingUrl = null;
             playerOverlay.style.opacity = '1';
             loadingOverlay.classList.add('hidden');
@@ -1801,35 +2104,126 @@
             videoPlayer.removeAttribute('src');
             videoPlayer.load();
 
-            // --- Resolve proxy URL (cho các link dạng vieon.php, tv360.php, cleankey.php, ...) ---
+            // --- Resolve proxy URL (dùng XHR + Blob URL) ---
             let resolvedUrl = url;
-            const isPhpProxy = url.includes('.php') && !url.includes('.mpd') && !url.includes('.m3u8');
-            if (isPhpProxy) {
-                try {
-                    const userAgent = (channel.props && channel.props['http-user-agent']) || 'Dalvik/2.1.0';
-                    const resp = await fetch(url, {
-                        headers: { 'User-Agent': userAgent, 'Accept': '*/*' }
-                    });
-                    if (resp.ok) {
-                        const text = await resp.text();
-                        // Thử parse JSON trước
+            const needsResolve = url.includes('.php') || url.includes('vietanhtv') || url.includes('tv360') || url.includes('vieon') || url.includes('hoiquan');
+            if (needsResolve) {
+                if (resolveEnabled) {
+                    // === CHẾ ĐỘ BẬT: Fetch + parse response để tìm stream URL ===
+                    loadingOverlay.classList.remove('hidden');
+                    const statusEl = document.getElementById('resolve-status');
+                    if (statusEl) statusEl.classList.remove('hidden');
+
+                    // Bước 1: Dùng XHR trước (vượt CORS khi mở từ file://)
+                    let responseText = null;
+                    let finalUrl = null;
+                    try {
+                        const xhrResult = await xhrFetchText(url);
+                        responseText = xhrResult.text;
+                        finalUrl = xhrResult.finalUrl || url;
+                        console.log(`[Resolver] XHR OK, final URL: ${finalUrl.substring(0,100)}`);
+                    } catch (e) {
+                        console.warn('[Resolver] XHR thất bại, thử fetch:', e.message);
                         try {
-                            const json = JSON.parse(text);
-                            resolvedUrl = json.url || json.data?.url || json.stream?.url || json.location || text.trim();
-                        } catch(e) {
-                            // Nếu không phải JSON, có thể là redirect URL hoặc link trực tiếp
-                            const trimmed = text.trim();
-                            if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-                                resolvedUrl = trimmed;
-                            } else if (resp.url && resp.url !== url) {
-                                // Nếu có redirect, dùng URL cuối cùng
-                                resolvedUrl = resp.url;
+                            const resp = await fetch(url, {
+                                headers: {
+                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                    'Accept': '*/*',
+                                    'Referer': 'https://vietanhtv.id.vn/',
+                                },
+                                redirect: 'follow',
+                            });
+                            if (resp.ok) {
+                                responseText = await resp.text();
+                                finalUrl = resp.url;
+                                console.log(`[Resolver] Fetch OK, final URL: ${finalUrl.substring(0,100)}`);
+                            }
+                        } catch (e2) {
+                            console.warn('[Resolver] Fetch cũng thất bại:', e2.message);
+                        }
+                    }
+
+                    if (responseText && responseText.length > 5) {
+                        const parsed = parseResponseForStream(responseText, finalUrl || url, url);
+                        if (parsed) {
+                            if (parsed.startsWith('http')) {
+                                resolvedUrl = parsed;
+                                console.log(`[Resolver] ✅ Tìm thấy stream URL: ${resolvedUrl.substring(0,120)}`);
+                            } else {
+                                try {
+                                    const isM3U = parsed.includes('#EXTM3U') || parsed.includes('#EXTINF');
+                                    const isJSON = parsed.trim().startsWith('{') || parsed.trim().startsWith('[');
+                                    const mimeType = isM3U ? 'application/vnd.apple.mpegurl' :
+                                                    isJSON ? 'application/json' : 'text/plain';
+                                    const blob = new Blob([parsed], { type: mimeType });
+                                    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+                                    currentBlobUrl = URL.createObjectURL(blob);
+                                    resolvedUrl = currentBlobUrl;
+                                    console.log(`[Resolver] ✅ Đã tạo Blob URL (${mimeType}): ${resolvedUrl.substring(0,50)}`);
+                                } catch (e) {
+                                    console.warn('[Resolver] Không thể tạo Blob URL:', e.message);
+                                }
+                            }
+                        } else {
+                            if (finalUrl && finalUrl !== url && /\.(m3u8|mpd|ts)(\?|#|$)/i.test(finalUrl)) {
+                                resolvedUrl = finalUrl;
+                                console.log(`[Resolver] ✅ Dùng finalUrl sau redirect: ${resolvedUrl.substring(0,120)}`);
+                            } else if (responseText.includes('#EXTM3U') || responseText.includes('#EXTINF')) {
+                                try {
+                                    const blob = new Blob([responseText], { type: 'application/vnd.apple.mpegurl' });
+                                    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+                                    currentBlobUrl = URL.createObjectURL(blob);
+                                    resolvedUrl = currentBlobUrl;
+                                    console.log(`[Resolver] ✅ Dùng responseText làm M3U playlist (Blob URL)`);
+                                } catch (e) {
+                                    console.warn('[Resolver] Không thể tạo Blob URL từ responseText:', e.message);
+                                }
                             }
                         }
-                        console.log(`Proxy URL resolved: ${url} → ${resolvedUrl}`);
+                    } else {
+                        console.warn('[Resolver] ❌ Không lấy được response từ PHP');
                     }
-                } catch(e) {
-                    console.warn(`Không thể resolve proxy URL ${url}:`, e.message);
+
+                    if (statusEl) statusEl.classList.add('hidden');
+                    console.log(`[Resolver] Kết quả cuối: ${url.substring(0,80)} → ${String(resolvedUrl).substring(0,120)}`);
+                } else {
+                    // === CHẾ ĐỘ TẮT: Chỉ follow redirect, không parse ===
+                    console.log('[Resolver] Resolve TẮT, chỉ follow redirect...');
+                    try {
+                        const xhrResult = await xhrFetchText(url);
+                        const finalUrl = xhrResult.finalUrl || url;
+                        if (finalUrl !== url && /\.(m3u8|mpd|ts)(\?|#|$)/i.test(finalUrl)) {
+                            resolvedUrl = finalUrl;
+                            console.log(`[Resolver] ✅ Redirect đến: ${resolvedUrl.substring(0,120)}`);
+                        } else if (xhrResult.text && xhrResult.text.length > 5) {
+                            // Không redirect tới stream, thử parse nhanh
+                            const parsed = parseResponseForStream(xhrResult.text, finalUrl, url);
+                            if (parsed && parsed.startsWith('http')) {
+                                resolvedUrl = parsed;
+                                console.log(`[Resolver] ✅ Tìm thấy trong response: ${resolvedUrl.substring(0,120)}`);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[Resolver] XHR redirect thất bại, thử fetch:', e.message);
+                        try {
+                            const resp = await fetch(url, {
+                                headers: {
+                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                                    'Accept': '*/*',
+                                },
+                                redirect: 'follow',
+                            });
+                            if (resp.ok) {
+                                const finalUrl = resp.url;
+                                if (finalUrl !== url) {
+                                    resolvedUrl = finalUrl;
+                                    console.log(`[Resolver] ✅ Fetch redirect đến: ${resolvedUrl.substring(0,120)}`);
+                                }
+                            }
+                        } catch (e2) {
+                            console.warn('[Resolver] Fetch redirect cũng thất bại:', e2.message);
+                        }
+                    }
                 }
             }
 
@@ -1842,11 +2236,28 @@
 
                 // Handle ClearKey DRM
                 if (channel.props && channel.props['inputstream.adaptive.license_type'] === 'clearkey') {
-                    const keyString = channel.props['inputstream.adaptive.license_key'];
+                    let keyString = channel.props['inputstream.adaptive.license_key'];
                     const clearKeys = {};
 
+                    // TH0: Nếu resolvedUrl là JSON (từ PHP proxy trả về cả key lẫn url)
+                    if (resolvedUrl && (resolvedUrl.startsWith('{') || resolvedUrl.startsWith('['))) {
+                        try {
+                            const proxyData = JSON.parse(resolvedUrl);
+                            // Tìm kid và key từ JSON
+                            let kid = proxyData.kid || (proxyData.keys && proxyData.keys[0]?.kid);
+                            let key = proxyData.k || (proxyData.keys && proxyData.keys[0]?.k);
+                            // Tìm stream URL
+                            const streamUrl = proxyData.url || proxyData.data?.url || proxyData.stream?.url || proxyData.location;
+                            if (streamUrl) resolvedUrl = streamUrl;
+                            if (kid && key) {
+                                clearKeys[base64ToHex(kid)] = base64ToHex(key);
+                                console.log(`[ClearKey] Extracted from proxy JSON: KID=${kid}, KEY=${key}`);
+                            }
+                        } catch(e) { /* ignore */ }
+                    }
+
                     // TH1: license_key là URL (license server trả về key động)
-                    if (keyString && (keyString.startsWith('http://') || keyString.startsWith('https://'))) {
+                    if (Object.keys(clearKeys).length === 0 && keyString && (keyString.startsWith('http://') || keyString.startsWith('https://'))) {
                         try {
                             const userAgent = (channel.props && channel.props['http-user-agent']) || 'Dalvik/2.1.0';
                             const keyResp = await fetch(keyString, {
@@ -1879,8 +2290,10 @@
                         } catch(e) {
                             console.warn(`Không thể fetch license key từ URL ${keyString}:`, e.message);
                         }
-                    } else {
-                        // TH2: key tĩnh (JSON hoặc hex)
+                    }
+
+                    // TH2: key tĩnh (JSON hoặc hex) — chỉ nếu chưa có key từ các bước trên
+                    if (Object.keys(clearKeys).length === 0 && keyString) {
                         try {
                             // Attempt 1: JSON format {"keys":[{"kid":"...","k":"..."}]} or {"kid":"...","k":"..."}
                             const keyData = JSON.parse(keyString);
